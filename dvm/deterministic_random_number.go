@@ -19,7 +19,7 @@ package dvm
 import "encoding/binary"
 import "golang.org/x/crypto/salsa20/salsa"
 
-import "github.com/deroproject/derosuite/crypto"
+import "../crypto"
 
 /* this file implements a deterministic random number generator
    the random number space is quite large but still unattackable, since the seeds are random
@@ -35,8 +35,8 @@ type RND struct {
 // make sure 2 SCs cannot  ever generate same series of random numbers
 func Initialize_RND(SCID, BLID, TXID crypto.Key) (r *RND) {
 	r = &RND{}
-	tmp := crypto.Keccak256(SCID[:],BLID[:],TXID[:])
-        copy(r.Key[:], tmp[:])
+	tmp := crypto.Keccak256(SCID[:], BLID[:], TXID[:])
+	copy(r.Key[:], tmp[:])
 	r.Pos = 1 // we start at 1 to eliminate an edge case
 	return    // TODO we must reinitialize using blid and other parameters
 }
@@ -51,7 +51,7 @@ func (r *RND) Random() uint64 {
 
 	binary.BigEndian.PutUint64(in[:], r.Pos)
 
-	salsa.HSalsa20(&out, &in, &key, &in)
+	HSalsa20(&out, &in, &key, &in)
 
 	deterministic_value := binary.BigEndian.Uint64(out[:])
 	r.Pos++

@@ -19,7 +19,7 @@ package dvm
 import "go/ast"
 import "strings"
 
-import "github.com/deroproject/derosuite/address"
+import "../address"
 
 // this files defines  external functions which can be called in DVM
 // for example to load and store data from the blockchain and other basic functions
@@ -37,17 +37,16 @@ func (dvm *DVM_Interpreter) Handle_Internal_Function(expr *ast.CallExpr, func_na
 	var err error
 	_ = err
 	switch {
-        
-            // TODO evaluate why not use a blackbox function which can be used for as many returns as possible
-            // the function should behave similar to how RDMSR intel instruction works.
-            // this can allow as future compatibility etc
-        case strings.EqualFold(func_name, "MAJOR_VERSION"):
+
+	// TODO evaluate why not use a blackbox function which can be used for as many returns as possible
+	// the function should behave similar to how RDMSR intel instruction works.
+	// this can allow as future compatibility etc
+	case strings.EqualFold(func_name, "MAJOR_VERSION"):
 		if len(expr.Args) != 0 { // expression without limit
 			panic("MAJOR_VERSION expects no parameters")
-		}else{
-                    return true, 0
-                }
-                    
+		} else {
+			return true, 0
+		}
 
 	case strings.EqualFold(func_name, "Load"):
 		if len(expr.Args) != 1 {

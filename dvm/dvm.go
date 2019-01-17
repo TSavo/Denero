@@ -28,8 +28,8 @@ import "go/token"
 import "math"
 
 import "runtime/debug"
-import "github.com/deroproject/derosuite/crypto"
-import "github.com/deroproject/derosuite/address"
+import "../crypto"
+import "../address"
 
 type Vtype int
 
@@ -60,16 +60,16 @@ type Variable struct {
 }
 
 type Function struct {
-	Name        string              `msgpack:"N,omitempty" json:"N,omitempty"`
-	Params      []Variable          `msgpack:"P,omitempty" json:"P,omitempty"`
-	ReturnValue Variable            `msgpack:"R,omitempty" json:"R,omitempty"`
-	Lines		[]Line				`msgpack:"L,omitempty" json:"L,omitempty"`
-	LabelMap	map[string]int	`msgpack:"M,omitempty" json:"M,omitempty"`
+	Name        string         `msgpack:"N,omitempty" json:"N,omitempty"`
+	Params      []Variable     `msgpack:"P,omitempty" json:"P,omitempty"`
+	ReturnValue Variable       `msgpack:"R,omitempty" json:"R,omitempty"`
+	Lines       []Line         `msgpack:"L,omitempty" json:"L,omitempty"`
+	LabelMap    map[string]int `msgpack:"M,omitempty" json:"M,omitempty"`
 }
 
 type Line struct {
-	Label 		string 	`msgpack:"L,omitempty" json:"L,omitempty'`
-	Code		string  `msgpack:"L,omitempty" json:"L,omitempty'`
+	Label string `msgpack:"L,omitempty" json:"L,omitempty'`
+	Code  string `msgpack:"L,omitempty" json:"L,omitempty'`
 }
 
 const LIMIT_interpreted_lines = 2000 // testnet has hardcoded limit
@@ -262,22 +262,22 @@ func parse_function_line(SC *SmartContract, function **Function, line []string) 
 		_, err := strconv.ParseUint(possible_line_number, 10, 64)
 		label := ""
 		if err != nil {
-			if(strings.Contains(possible_line_number, ":")){
-				if((*function).LabelMap[possible_line_number] != 0) { // duplicate line number
+			if strings.Contains(possible_line_number, ":") {
+				if (*function).LabelMap[possible_line_number] != 0 { // duplicate line number
 					return fmt.Errorf("Error: duplicate label within function  \"%s\" ", (*function).Name)
 				}
-				label = strings.TrimSuffix(possible_line_number, ":");
+				label = strings.TrimSuffix(possible_line_number, ":")
 			}
-		}else{
+		} else {
 			label = possible_line_number
 		}
 		line_copy := line[pos]
 		this_line := Line{}
-		if(label != ""){
-			(*function).LabelMap[label] = pos;
+		if label != "" {
+			(*function).LabelMap[label] = pos
 			this_line.Label = label
 			this_line.Code = strings.Join(strings.Fields(line_copy)[1:], " ")
-		}else{
+		} else {
 			this_line.Code = line_copy
 		}
 		(*function).Lines[pos] = this_line
@@ -299,7 +299,7 @@ func runSmartContract_internal(SC *SmartContract, EntryPoint string, state *Shar
 
 	var dvm DVM_Interpreter
 	dvm.SC = SC
-	dvm.f = function_call
+	dvm.function = function_call
 	dvm.Locals = map[string]Variable{}
 
 	dvm.State = state // set state to execute current function
@@ -333,7 +333,7 @@ func runSmartContract_internal(SC *SmartContract, EntryPoint string, state *Shar
 	}
 
 	// all variables have been collected, start interpreter
-	dvm.ReturnValue = dvm.f.ReturnValue // enforce return value to be of same type
+	dvm.ReturnValue = dvm.function.ReturnValue // enforce return value to be of same type
 
 	dvm.State.Monitor_recursion++ // higher recursion
 
@@ -439,7 +439,7 @@ type DVM_Interpreter struct {
 	SCID        string
 	SC          *SmartContract
 	EntryPoint  string
-	function           Function
+	function    Function
 	IP          uint64              // current line number
 	ReturnValue Variable            // Result of current function call
 	Locals      map[string]Variable // all local variables
@@ -475,12 +475,12 @@ func (i *DVM_Interpreter) interpret_SmartContract() (err error) {
 		newIP = 0 // this is necessary otherwise, it will trigger an infinite loop in the case given below
 
 		/*
-		                 * Function SetOwner(value Uint64, newowner String) Uint64
-			10  IF LOAD("owner") == SIGNER() THEN GOTO 30
-			20  RETURN 1
-			30  STORE("owner",newowner)
-			40  RETURN 0
-			End Function
+			                 * Function SetOwner(value Uint64, newowner String) Uint64
+				10  IF LOAD("owner") == SIGNER() THEN GOTO 30
+				20  RETURN 1
+				30  STORE("owner",newowner)
+				40  RETURN 0
+				End Function
 		*/
 
 		if i.State.Monitor_lines_interpreted > LIMIT_interpreted_lines {
@@ -574,19 +574,19 @@ func (dvm *DVM_Interpreter) interpret_DIM(line []string) (newIP uint64, err erro
 	// check last data type
 	data_type := check_valid_type(line[len(line)-1])
 	if data_type == Invalid {
-		return 0, fmt.Errorf("function name \"%s\", No such Data type \"%s\"", dvm.f.Name, line[len(line)-1])
+		return 0, fmt.Errorf("function name \"%s\", No such Data type \"%s\"", dvm.function.Name, line[len(line)-1])
 	}
 
 	for i := 0; i < len(line)-2; i++ {
 		if line[i] != "," { // ignore separators
 
 			if !check_valid_name(line[i]) {
-				return 0, fmt.Errorf("function name \"%s\", variable name \"%s\" contains invalid characters", dvm.f.Name, line[i])
+				return 0, fmt.Errorf("function name \"%s\", variable name \"%s\" contains invalid characters", dvm.function.Name, line[i])
 			}
 
 			// check whether variable is already defined
 			if _, ok := dvm.Locals[line[i]]; ok {
-				return 0, fmt.Errorf("function name \"%s\", variable name \"%s\" contains invalid characters", dvm.f.Name, line[i])
+				return 0, fmt.Errorf("function name \"%s\", variable name \"%s\" contains invalid characters", dvm.function.Name, line[i])
 			}
 
 			// all data variables are pre-initialized
@@ -620,7 +620,7 @@ func (dvm *DVM_Interpreter) interpret_LET(line []string) (newIP uint64, err erro
 	}
 
 	if _, ok := dvm.Locals[line[0]]; !ok {
-		err = fmt.Errorf("function name \"%s\", variable name \"%s\"  is used without definition", dvm.f.Name, line[0])
+		err = fmt.Errorf("function name \"%s\", variable name \"%s\"  is used without definition", dvm.function.Name, line[0])
 		return
 	}
 	result := dvm.Locals[line[0]]
@@ -745,7 +745,7 @@ func (dvm *DVM_Interpreter) interpret_RETURN(line []string) (newIP uint64, err e
 
 	if dvm.ReturnValue.Type == Invalid {
 		if len(line) != 0 {
-			err = fmt.Errorf("function name \"%s\" cannot return anything", dvm.f.Name)
+			err = fmt.Errorf("function name \"%s\" cannot return anything", dvm.function.Name)
 			return
 		}
 
@@ -755,7 +755,7 @@ func (dvm *DVM_Interpreter) interpret_RETURN(line []string) (newIP uint64, err e
 	}
 
 	if len(line) == 0 {
-		err = fmt.Errorf("function name \"%s\" should return  a value", dvm.f.Name)
+		err = fmt.Errorf("function name \"%s\" should return  a value", dvm.function.Name)
 		return
 	}
 
@@ -834,7 +834,7 @@ func (dvm *DVM_Interpreter) eval(exp ast.Expr) interface{} {
 		return dvm.evalBinaryExpr(exp)
 	case *ast.Ident: // it's a variable,
 		if _, ok := dvm.Locals[exp.Name]; !ok {
-			panic(fmt.Sprintf("function name \"%s\", variable name \"%s\"  is used without definition", dvm.f.Name, exp.Name))
+			panic(fmt.Sprintf("function name \"%s\", variable name \"%s\"  is used without definition", dvm.function.Name, exp.Name))
 
 		}
 		//fmt.Printf("value %s %d\n",exp.Name,  dvm.Locals[exp.Name].Value)
