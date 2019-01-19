@@ -83,11 +83,11 @@ func fill_common_skip_topoheight(common *Common_Struct) {
 func (connection *Connection) Update(common *Common_Struct) {
 	//connection.Lock()
 	//defer connection.Unlock()
-	atomic.StoreInt64(&connection.Height, common.Height)             // satify race detector GOD
-	if  common.StableHeight != 0{
+	atomic.StoreInt64(&connection.Height, common.Height) // satify race detector GOD
+	if common.StableHeight != 0 {
 		atomic.StoreInt64(&connection.StableHeight, common.StableHeight) // satify race detector GOD
 	}
-	atomic.StoreInt64(&connection.TopoHeight, common.TopoHeight)     // satify race detector GOD
+	atomic.StoreInt64(&connection.TopoHeight, common.TopoHeight) // satify race detector GOD
 
 	//connection.Top_ID = common.Top_ID
 	connection.Cumulative_Difficulty = common.Cumulative_Difficulty
@@ -166,16 +166,15 @@ func (conn *Connection) Send_Message_prelocked(data_bytes []byte) {
 
 	var length_bytes [4]byte
 	binary.LittleEndian.PutUint32(length_bytes[:], uint32(len(data_bytes)))
-        
 
 	// each connection has a write deadline of 60 secs
-    conn.Conn.SetWriteDeadline(time.Now().Add(60 * time.Second)) 
+	conn.Conn.SetWriteDeadline(time.Now().Add(60 * time.Second))
 	if _, err := conn.Conn.Write(length_bytes[:]); err != nil { // send the length prefix
 		conn.Exit()
 		return
 	}
 
-	conn.Conn.SetWriteDeadline(time.Now().Add(60 * time.Second)) 
+	conn.Conn.SetWriteDeadline(time.Now().Add(60 * time.Second))
 	if _, err := conn.Conn.Write(data_bytes[:]); err != nil { // send the message itself
 		conn.Exit()
 		return
@@ -227,7 +226,7 @@ func (connection *Connection) Read_Data_Frame(timeout int64, max_block_size uint
 	if atomic.LoadUint32(&connection.State) != HANDSHAKE_PENDING {
 		atomic.StoreUint32(&connection.State, ACTIVE)
 	}
-	
+
 	return data_buf
 
 }
@@ -296,7 +295,7 @@ func Handle_Connection(conn net.Conn, remote_addr *net.TCPAddr, incoming bool, s
 
 				//connection.logger.Warnf("Removing connection")
 				ticker.Stop() // release resources of timer
-                conn.Close()
+				conn.Close()
 				Connection_Delete(&connection)
 				return // close the connection and close the routine
 			}
@@ -313,7 +312,7 @@ func Handle_Connection(conn net.Conn, remote_addr *net.TCPAddr, incoming bool, s
 					}
 
 					// if no timed sync response in 2 minute kill the connection
-					if time.Now().Sub(connection.request_time.Load().(time.Time)) > 120*time.Second{
+					if time.Now().Sub(connection.request_time.Load().(time.Time)) > 120*time.Second {
 						connection.Exit()
 					}
 

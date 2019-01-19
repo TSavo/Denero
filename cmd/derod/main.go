@@ -145,7 +145,7 @@ func main() {
 	chain, err := blockchain.Blockchain_Start(params)
 
 	if err != nil {
-		globals.Logger.Warnf("Error starting blockchain err '%s'",err)
+		globals.Logger.Warnf("Error starting blockchain err '%s'", err)
 		return
 	}
 
@@ -324,30 +324,30 @@ func main() {
 		return nil, 0, false
 	})
 	l.Refresh() // refresh the prompt
-        
-        
-        
-        go func (){
-            var gracefulStop = make(chan os.Signal)
-            signal.Notify(gracefulStop,os.Interrupt) // listen to all signals
-            for {
-                sig := <-gracefulStop
-                fmt.Printf("received signal %s\n", sig)
-            
-                if sig.String() == "interrupt" {
-                    close(Exit_In_Progress)	
-                }
-            }
-        }()
+
+	go func() {
+		var gracefulStop = make(chan os.Signal)
+		signal.Notify(gracefulStop, os.Interrupt) // listen to all signals
+		for {
+			sig := <-gracefulStop
+			fmt.Printf("received signal %s\n", sig)
+
+			if sig.String() == "interrupt" {
+				close(Exit_In_Progress)
+			}
+		}
+	}()
 
 	for {
 		line, err := l.Readline()
-                
-                select {
-                    case <-Exit_In_Progress: fmt.Printf("exiting channel");break;
-                    default:
-                }
-                
+
+		select {
+		case <-Exit_In_Progress:
+			fmt.Printf("exiting channel")
+			break
+		default:
+		}
+
 		if err == readline.ErrInterrupt {
 			if len(line) == 0 {
 				fmt.Print("Ctrl-C received, Exit in progress\n")
@@ -357,13 +357,9 @@ func main() {
 				continue
 			}
 		} else if err == io.EOF {
-                     <-Exit_In_Progress
-                     break
+			<-Exit_In_Progress
+			break
 		}
-		
-
-		
-		
 
 		line = strings.TrimSpace(line)
 		line_parts := strings.Fields(line)
@@ -449,7 +445,7 @@ func main() {
 				if err, ok := chain.Add_Complete_Block(cbl); ok {
 					globals.Logger.Warnf("Block Successfully accepted by chain at height %d", cbl.Bl.Miner_TX.Vin[0].(transaction.Txin_gen).Height)
 				} else {
-					globals.Logger.Warnf("Block rejected by chain at height %d, please investigate, err %s", cbl.Bl.Miner_TX.Vin[0].(transaction.Txin_gen).Height,err)
+					globals.Logger.Warnf("Block rejected by chain at height %d, please investigate, err %s", cbl.Bl.Miner_TX.Vin[0].(transaction.Txin_gen).Height, err)
 					globals.Logger.Warnf("Stopping import")
 
 				}
@@ -473,15 +469,15 @@ func main() {
 			defer pprof.StopCPUProfile()
 
 			/*
-			        	memoryfile,err := os.Create(filepath.Join(globals.GetDataDirectory(), "memoryprofile.prof"))
-						if err != nil{
-							globals.Logger.Warnf("Could not start memory profiling, err %s", err)
-							continue
-						}
-						if err := pprof.WriteHeapProfile(memoryfile); err != nil {
-			            	globals.Logger.Warnf("could not start memory profile: ", err)
-			        	}
-			        	memoryfile.Close()
+				        	memoryfile,err := os.Create(filepath.Join(globals.GetDataDirectory(), "memoryprofile.prof"))
+							if err != nil{
+								globals.Logger.Warnf("Could not start memory profiling, err %s", err)
+								continue
+							}
+							if err := pprof.WriteHeapProfile(memoryfile); err != nil {
+				            	globals.Logger.Warnf("could not start memory profile: ", err)
+				        	}
+				        	memoryfile.Close()
 			*/
 
 		case command == "print_bc":
@@ -612,36 +608,35 @@ func main() {
 				fmt.Printf("mining stopped\n")
 			}
 			mining = false
-                case command == "sc_value":
-                    
-                       if len(line_parts) == 1 ||   len(line_parts) >= 4 {
-                           fmt.Printf("sc_value needs argument scid to print info\n")
-                           continue
-                       }
+		case command == "sc_value":
 
-                        txid, err := hex.DecodeString(strings.ToLower(line_parts[1]))
+			if len(line_parts) == 1 || len(line_parts) >= 4 {
+				fmt.Printf("sc_value needs argument scid to print info\n")
+				continue
+			}
 
-				if err != nil {
-					fmt.Printf("err while decoding txid err %s\n", err)
-					continue
+			txid, err := hex.DecodeString(strings.ToLower(line_parts[1]))
+
+			if err != nil {
+				fmt.Printf("err while decoding txid err %s\n", err)
+				continue
+			}
+			var scid crypto.Key
+			copy(scid[:32], []byte(txid))
+
+			var key interface{}
+			if len(line_parts) >= 3 {
+				if s, err := strconv.ParseUint(line_parts[2], 10, 64); err == nil {
+					key = s
+				} else {
+					key = line_parts[2]
 				}
-				var scid crypto.Key
-				copy(scid[:32], []byte(txid))
-                        
-                                var key interface{}
-                                if len(line_parts) >= 3 {
-                                 if s, err := strconv.ParseUint(line_parts[2], 10, 64); err == nil {
-				   key = s
-                                }else{
-                                    key = line_parts[2]
-                                }
-                                    
-                                }
-			
-			balance, value := chain.ReadSCValue(nil,scid,key)
-                        fmt.Printf("sc %s balance %s DERO\n", scid, globals.FormatMoney12(balance))
-                        fmt.Printf("sc %s key \"%+v\": %+v\n", scid, key,value)
 
+			}
+
+			balance, value := chain.ReadSCValue(nil, scid, key)
+			fmt.Printf("sc %s balance %s DERO\n", scid, globals.FormatMoney12(balance))
+			fmt.Printf("sc %s key \"%+v\": %+v\n", scid, key, value)
 
 		case command == "print_tree": // prints entire block chain tree
 			//WriteBlockChainTree(chain, "/tmp/graph.dot")
@@ -1020,7 +1015,7 @@ func usage(w io.Writer) {
 	io.WriteString(w, "\t\033[1mstart_mining\033[0m\tStart mining <dero address> <number of threads>\n")
 	io.WriteString(w, "\t\033[1mstop_mining\033[0m\tStop daemon mining\n")
 	io.WriteString(w, "\t\033[1mpeer_list\033[0m\tPrint peer list\n")
-        io.WriteString(w, "\t\033[1msc_value\033[0m\tPrint sc balance and stored <scid> <key>\n")
+	io.WriteString(w, "\t\033[1msc_value\033[0m\tPrint sc balance and stored <scid> <key>\n")
 	io.WriteString(w, "\t\033[1msync_info\033[0m\tPrint information about connected peers and their state\n")
 	io.WriteString(w, "\t\033[1mbye\033[0m\t\tQuit the daemon\n")
 	io.WriteString(w, "\t\033[1mban\033[0m\t\tBan specific ip from making any connections\n")
@@ -1069,7 +1064,7 @@ var completer = readline.NewPrefixCompleter(
 	readline.PcItem("print_block"),
 	readline.PcItem("print_height"),
 	readline.PcItem("print_tx"),
-        readline.PcItem("sc_value"),
+	readline.PcItem("sc_value"),
 	readline.PcItem("status"),
 	readline.PcItem("start_mining"),
 	readline.PcItem("stop_mining"),

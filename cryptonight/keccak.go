@@ -16,7 +16,6 @@
 
 // TODO keccak is available in 3 of our packages we need to merge them when the alpha version is out
 // Package keccak implements the Keccak (SHA-3) hash algorithm.
-// http://keccak.noekeon.org / FIPS 202 draft.
 package cryptonight
 
 // import "fmt"

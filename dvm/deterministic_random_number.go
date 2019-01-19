@@ -17,7 +17,7 @@
 package dvm
 
 import "encoding/binary"
-import "golang.org/x/crypto/salsa20/salsa"
+import . "golang.org/x/crypto/salsa20/salsa"
 
 import "../crypto"
 

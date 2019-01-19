@@ -103,7 +103,7 @@ type Wallet struct {
 	dynamic_fees_per_kb uint64
 	quit                chan bool // channel to quit any processing go routines
 
-//	db *bolt.DB // access to DB
+	//	db *bolt.DB // access to DB
 
 	DB_mem map[string]map[string]map[string][]byte `json:"DB_mem"`
 
@@ -170,7 +170,6 @@ func Create_Encrypted_Wallet(filename string, password string, seed crypto.Key) 
 	w.quit = make(chan bool)
 
 	w.id = string((w.account.GetAddress().String())[:8]) // set unique id for logs
-        
 
 	rlog.Infof("Successfully created wallet %s", w.id)
 	return
@@ -435,7 +434,7 @@ func (w *Wallet) Check_Password(password string) bool {
 
 // save updated copy of wallet
 func (w *Wallet) Save_Wallet() (err error) {
-    return
+	return
 }
 
 func (w *Wallet) Save_Wallet2() (err error) {
@@ -715,10 +714,10 @@ func itob(v uint64) []byte {
 }
 
 // place holders
-func (w *Wallet) disable_sync(){
-  
+func (w *Wallet) disable_sync() {
+
 }
 
-func (w *Wallet) enable_sync(){
+func (w *Wallet) enable_sync() {
 
 }

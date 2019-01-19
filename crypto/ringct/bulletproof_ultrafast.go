@@ -70,10 +70,9 @@ func (proof *BulletProof) BULLETPROOF_Verify_ultrafast() (result bool) {
 	}
 
 	// these checks try to filter out rogue inputs
-	if proof.BULLETPROOF_BasicChecks() == false{
-            return false
-        }
-    
+	if proof.BULLETPROOF_BasicChecks() == false {
+		return false
+	}
 
 	logN := len(proof.L)
 	N := int(1 << uint(logN))

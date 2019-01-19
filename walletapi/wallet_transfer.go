@@ -36,14 +36,10 @@ import "github.com/deroproject/derosuite/address"
 import "github.com/deroproject/derosuite/structures"
 import "github.com/deroproject/derosuite/blockchain/inputmaturity"
 
-
-
-
 // send amount to specific addresses
 func (w *Wallet) Transfer(addr []address.Address, amount []uint64, unlock_time uint64, payment_id_hex string, fees_per_kb uint64, mixin uint64, sctx *transaction.SC_Transaction) (tx *transaction.Transaction, inputs_selected []uint64, inputs_sum uint64, change_amount uint64, err error) {
 
-    
-        var  transfer_details structures.Outgoing_Transfer_Details
+	var transfer_details structures.Outgoing_Transfer_Details
 	w.transfer_mutex.Lock()
 	defer w.transfer_mutex.Unlock()
 	if mixin == 0 {
@@ -52,8 +48,7 @@ func (w *Wallet) Transfer(addr []address.Address, amount []uint64, unlock_time u
 	if mixin < 5 { // enforce minimum mixin
 		mixin = 5
 	}
-	
-	
+
 	// if wallet is online,take the fees from the network itself
 	// otherwise use whatever user has provided
 	//if w.GetMode()  {
@@ -71,7 +66,7 @@ func (w *Wallet) Transfer(addr []address.Address, amount []uint64, unlock_time u
 		return
 	}
 
-	if sctx ==  nil && len(addr) < 0 {
+	if sctx == nil && len(addr) < 0 {
 		err = fmt.Errorf("Destination address missing")
 		return
 	}
@@ -112,19 +107,18 @@ func (w *Wallet) Transfer(addr []address.Address, amount []uint64, unlock_time u
 			payment_id = addr[i].PaymentID
 		}
 	}
-	
+
 	// reject valid DERO address
 	for i := range addr {
 		if !addr[i].IsDERONetwork() {
 			err = fmt.Errorf("address provided is not a valid DERO network address")
-                        return
+			return
 		}
-		if addr[i].IsMainnet()  != globals.IsMainnet() {
-                        err = fmt.Errorf("address provided has invalid DERO network mainnet/testnet")
-                        return
-                }
+		if addr[i].IsMainnet() != globals.IsMainnet() {
+			err = fmt.Errorf("address provided has invalid DERO network mainnet/testnet")
+			return
+		}
 	}
-	
 
 	fees := uint64(0) // start with zero fees
 	expected_fee := uint64(0)
@@ -155,7 +149,7 @@ func (w *Wallet) Transfer(addr []address.Address, amount []uint64, unlock_time u
 		inputs_selected, inputs_sum = w.select_outputs_for_transfer(total_amount_required, fees+expected_fee, false)
 
 		if inputs_sum < (total_amount_required + fees) {
-                        err = fmt.Errorf("Insufficent unlocked balance")
+			err = fmt.Errorf("Insufficent unlocked balance")
 			return
 		}
 
@@ -281,7 +275,7 @@ func (w *Wallet) Transfer(addr []address.Address, amount []uint64, unlock_time u
 
 	rebuild_tx_with_correct_fee:
 		outputs = outputs[:0]
-		
+
 		transfer_details.Fees = fees
 		transfer_details.Amount = transfer_details.Amount[:0]
 		transfer_details.Daddress = transfer_details.Daddress[:0]
@@ -291,9 +285,9 @@ func (w *Wallet) Transfer(addr []address.Address, amount []uint64, unlock_time u
 			output.Amount = amount[i]
 			output.Public_Spend_Key = addr[i].SpendKey
 			output.Public_View_Key = addr[i].ViewKey
-			
-			transfer_details.Amount = append(transfer_details.Amount,amount[i]) 
-                        transfer_details.Daddress = append(transfer_details.Daddress,addr[i].String()) 
+
+			transfer_details.Amount = append(transfer_details.Amount, amount[i])
+			transfer_details.Daddress = append(transfer_details.Daddress, addr[i].String())
 
 			outputs = append(outputs, output)
 		}
@@ -305,28 +299,27 @@ func (w *Wallet) Transfer(addr []address.Address, amount []uint64, unlock_time u
 		change.Public_View_Key = w.account.Keys.Viewkey_Public    // fill our public view key
 
 		if change.Amount > 0 { // include change only if required
-                    
-                    transfer_details.Amount = append(transfer_details.Amount,change.Amount) 
-                    transfer_details.Daddress = append(transfer_details.Daddress,w.account.GetAddress().String()) 
 
-                        
-                    outputs = append(outputs, change)
+			transfer_details.Amount = append(transfer_details.Amount, change.Amount)
+			transfer_details.Daddress = append(transfer_details.Daddress, w.account.GetAddress().String())
+
+			outputs = append(outputs, change)
 		}
 
 		change_amount = change.Amount
-		
+
 		// if encrypted payment ids are used, they are encrypted against first output
 		// if we shuffle outputs encrypted ids will break
-		if unlock_time == 0  { // shuffle output and change randomly
-			if  len(payment_id) == 8{ // do not shuffle if encrypted payment IDs are used
+		if unlock_time == 0 { // shuffle output and change randomly
+			if len(payment_id) == 8 { // do not shuffle if encrypted payment IDs are used
 
-			}else{
-                    globals.Global_Random.Shuffle(len(outputs), func(i, j int) {
+			} else {
+				globals.Global_Random.Shuffle(len(outputs), func(i, j int) {
 					outputs[i], outputs[j] = outputs[j], outputs[i]
-			})
-                    
-                }
-            }
+				})
+
+			}
+		}
 
 		// outputs = append(outputs, change)
 		tx = w.Create_TX_v2(inputs, outputs, fees, unlock_time, payment_id, true, sctx)
@@ -359,28 +352,26 @@ func (w *Wallet) Transfer(addr []address.Address, amount []uint64, unlock_time u
 		expected_fee = expected_fee * 2 // double the estimated fee
 
 	}
-	
-	// log enough information to wallet to display it again to users
-	transfer_details.PaymentID =  hex.EncodeToString(payment_id) 
-        
-        // get the tx secret key and store it
-        txhash := tx.GetHash()
-        transfer_details.TXsecretkey = w.GetTXKey(tx.GetHash())
-        transfer_details.TXID = txhash.String()
-        
-        // lets marshal the structure and store it in in DB
-        
-        details_serialized, err := json.Marshal(transfer_details)
-	if err != nil {
-                rlog.Warnf("Err marshalling details err %s", err) 
-	}
-        
-        w.store_key_value(BLOCKCHAIN_UNIVERSE, []byte(TX_OUT_DETAILS_BUCKET), txhash[:], details_serialized[:])
-        
-//        fmt.Printf("%+v\n",transfer_details)
-//        fmt.Printf("%+v\n",transfer_details,w.GetTXOutDetails(tx.GetHash()))
 
-        
+	// log enough information to wallet to display it again to users
+	transfer_details.PaymentID = hex.EncodeToString(payment_id)
+
+	// get the tx secret key and store it
+	txhash := tx.GetHash()
+	transfer_details.TXsecretkey = w.GetTXKey(tx.GetHash())
+	transfer_details.TXID = txhash.String()
+
+	// lets marshal the structure and store it in in DB
+
+	details_serialized, err := json.Marshal(transfer_details)
+	if err != nil {
+		rlog.Warnf("Err marshalling details err %s", err)
+	}
+
+	w.store_key_value(BLOCKCHAIN_UNIVERSE, []byte(TX_OUT_DETAILS_BUCKET), txhash[:], details_serialized[:])
+
+	//        fmt.Printf("%+v\n",transfer_details)
+	//        fmt.Printf("%+v\n",transfer_details,w.GetTXOutDetails(tx.GetHash()))
 
 	// log enough information in log file to validate sum(inputs) = sum(outputs) + fees
 
@@ -403,10 +394,8 @@ func (w *Wallet) Transfer(addr []address.Address, amount []uint64, unlock_time u
 // send all unlocked balance amount to specific address
 func (w *Wallet) Transfer_Everything(addr address.Address, payment_id_hex string, unlock_time uint64, fees_per_kb uint64, mixin uint64) (tx *transaction.Transaction, inputs_selected []uint64, inputs_sum uint64, err error) {
 
-    
-        var  transfer_details structures.Outgoing_Transfer_Details
-	
-	
+	var transfer_details structures.Outgoing_Transfer_Details
+
 	w.transfer_mutex.Lock()
 	defer w.transfer_mutex.Unlock()
 
@@ -588,23 +577,19 @@ func (w *Wallet) Transfer_Everything(addr address.Address, payment_id_hex string
 		output.Amount = inputs_sum - fees
 		output.Public_Spend_Key = addr.SpendKey
 		output.Public_View_Key = addr.ViewKey
-		
-		
+
 		transfer_details.Fees = fees
 		transfer_details.Amount = transfer_details.Amount[:0]
 		transfer_details.Daddress = transfer_details.Daddress[:0]
 
-		
-		transfer_details.Amount = append(transfer_details.Amount,output.Amount) 
-                transfer_details.Daddress = append(transfer_details.Daddress,addr.String()) 
-
-                    
+		transfer_details.Amount = append(transfer_details.Amount, output.Amount)
+		transfer_details.Daddress = append(transfer_details.Daddress, addr.String())
 
 		outputs = append(outputs, output)
 
 		// outputs = append(outputs, change)
-                // transfer everything cannot be used with SC transaction
-		tx = w.Create_TX_v2(inputs, outputs, fees, unlock_time, payment_id, true,nil)
+		// transfer everything cannot be used with SC transaction
+		tx = w.Create_TX_v2(inputs, outputs, fees, unlock_time, payment_id, true, nil)
 
 		tx_size := uint64(len(tx.Serialize()))
 		size_in_kb := tx_size / 1024
@@ -639,30 +624,26 @@ func (w *Wallet) Transfer_Everything(addr address.Address, payment_id_hex string
 		expected_fee = expected_fee * 2 // double the estimated fee
 
 	}
-	
-	
-	
-	// log enough information to wallet to display it again to users
-	transfer_details.PaymentID =  hex.EncodeToString(payment_id) 
-        
-        // get the tx secret key and store it
-        txhash := tx.GetHash()
-        transfer_details.TXsecretkey = w.GetTXKey(tx.GetHash())
-        transfer_details.TXID = txhash.String()
-        
-        // lets marshal the structure and store it in in DB
-        
-        details_serialized, err := json.Marshal(transfer_details)
-	if err != nil {
-                rlog.Warnf("Err marshalling details err %s", err) 
-	}
-        
-        w.store_key_value(BLOCKCHAIN_UNIVERSE, []byte(TX_OUT_DETAILS_BUCKET), txhash[:], details_serialized[:])
-        
-       // fmt.Printf("%+v\n",transfer_details)
-      //  fmt.Printf("%+v\n",transfer_details,w.GetTXOutDetails(tx.GetHash()))
 
-        
+	// log enough information to wallet to display it again to users
+	transfer_details.PaymentID = hex.EncodeToString(payment_id)
+
+	// get the tx secret key and store it
+	txhash := tx.GetHash()
+	transfer_details.TXsecretkey = w.GetTXKey(tx.GetHash())
+	transfer_details.TXID = txhash.String()
+
+	// lets marshal the structure and store it in in DB
+
+	details_serialized, err := json.Marshal(transfer_details)
+	if err != nil {
+		rlog.Warnf("Err marshalling details err %s", err)
+	}
+
+	w.store_key_value(BLOCKCHAIN_UNIVERSE, []byte(TX_OUT_DETAILS_BUCKET), txhash[:], details_serialized[:])
+
+	// fmt.Printf("%+v\n",transfer_details)
+	//  fmt.Printf("%+v\n",transfer_details,w.GetTXOutDetails(tx.GetHash()))
 
 	return
 }
@@ -824,30 +805,29 @@ func (w *Wallet) Create_TX_v2(inputs []ringct.Input_info, outputs []ringct.Outpu
 	if len(payment_id) == 32 {
 		tx.PaymentID_map[transaction.TX_EXTRA_NONCE_PAYMENT_ID] = payment_id
 	}
-	
+
 	// build up SC part if required
 	if sctx != nil {
-            // msgpack sctx 
-            
-            serialized, err := msgpack.Marshal(&sctx)
-            
-            if err != nil {
-                rlog.Warnf("Error marshal SC transactions %+v", err)
-                
-            }
-            
-            tx.Extra_map[transaction.TX_EXTRA_SCDATA] = serialized 
-            
-            // use the first key image as mechanism to stop replay attacks of all forms
-            msg_hash := crypto.Key(crypto.Keccak256( tx.Extra_map[transaction.TX_EXTRA_SCDATA].([]byte),inputs[0].Key_image[:]))
-            
-            var sig crypto.Signature 
-            
-            crypto.Signature_Generate(msg_hash,w.account.Keys.Spendkey_Public,w.account.Keys.Spendkey_Secret, &sig)
-            tx.Extra_map[transaction.TX_EXTRA_SIG] = sig 
-            tx.Extra_map[transaction.TX_EXTRA_ADDRESS] = w.GetAddress() 
-        }
-	
+		// msgpack sctx
+
+		serialized, err := msgpack.Marshal(&sctx)
+
+		if err != nil {
+			rlog.Warnf("Error marshal SC transactions %+v", err)
+
+		}
+
+		tx.Extra_map[transaction.TX_EXTRA_SCDATA] = serialized
+
+		// use the first key image as mechanism to stop replay attacks of all forms
+		msg_hash := crypto.Key(crypto.Keccak256(tx.Extra_map[transaction.TX_EXTRA_SCDATA].([]byte), inputs[0].Key_image[:]))
+
+		var sig crypto.Signature
+
+		crypto.Signature_Generate(msg_hash, w.account.Keys.Spendkey_Public, w.account.Keys.Spendkey_Secret, &sig)
+		tx.Extra_map[transaction.TX_EXTRA_SIG] = sig
+		tx.Extra_map[transaction.TX_EXTRA_ADDRESS] = w.GetAddress()
+	}
 
 	tx.Extra = tx.Serialize_Extra() // serialize the extra
 
@@ -869,18 +849,16 @@ func (w *Wallet) Create_TX_v2(inputs []ringct.Input_info, outputs []ringct.Outpu
 		index_within_tx := i
 		ehphermal_public_key := derivation.KeyDerivation_To_PublicKey(uint64(index_within_tx), outputs[i].Public_Spend_Key)
 
-		
-                
-                    // added the amount and key in vout
-                // in case of  SC transactions send output to vaccum
-                var zero crypto.Key 
-                if outputs[i].Public_View_Key == zero && outputs[i].Public_Spend_Key == zero {
-                
-		tx.Vout = append(tx.Vout, transaction.Tx_out{Amount: outputs[i].Amount, Target: transaction.Txout_to_key{Key: zero}})
-                }else{ // non-sc tx , output amount must be zero
-                    
-		tx.Vout = append(tx.Vout, transaction.Tx_out{Amount: 0, Target: transaction.Txout_to_key{Key: ehphermal_public_key}})
-                }
+		// added the amount and key in vout
+		// in case of  SC transactions send output to vaccum
+		var zero crypto.Key
+		if outputs[i].Public_View_Key == zero && outputs[i].Public_Spend_Key == zero {
+
+			tx.Vout = append(tx.Vout, transaction.Tx_out{Amount: outputs[i].Amount, Target: transaction.Txout_to_key{Key: zero}})
+		} else { // non-sc tx , output amount must be zero
+
+			tx.Vout = append(tx.Vout, transaction.Tx_out{Amount: 0, Target: transaction.Txout_to_key{Key: ehphermal_public_key}})
+		}
 
 		// setup key so as output amount can be encrypted, this will be passed later on to ringct package to encrypt amount
 		outputs[i].Scalar_Key = *(derivation.KeyDerivationToScalar(uint64(index_within_tx)))
@@ -907,30 +885,28 @@ func (w *Wallet) Create_TX_v2(inputs []ringct.Input_info, outputs []ringct.Outpu
 	return &tx
 }
 
-
 // this will give a random blob
 // just in case we allow to pay via blobs ( this protects the address )
-func (w *Wallet) GetRandomBlob( input_address string) string{
-    
-    if input_address == "" { // use wallet address
-        input_address = w.account.GetAddress().String()
-    }
-    
-    addr,err := address.NewAddress(input_address)
-    
-    if err == nil {
-     rlog.Warnf("Invalid input address while generating blob %s err %s", input_address, err )   
-     return ""
-    }
-    
-    tx_secret_key, tx_public_key := crypto.NewKeyPair() // create new tx key pair
-    derivation := crypto.KeyDerivation(&addr.ViewKey, tx_secret_key) // keyderivation using wallet address view key
-    	index_within_tx := uint64(0)
+func (w *Wallet) GetRandomBlob(input_address string) string {
+
+	if input_address == "" { // use wallet address
+		input_address = w.account.GetAddress().String()
+	}
+
+	addr, err := address.NewAddress(input_address)
+
+	if err == nil {
+		rlog.Warnf("Invalid input address while generating blob %s err %s", input_address, err)
+		return ""
+	}
+
+	tx_secret_key, tx_public_key := crypto.NewKeyPair()              // create new tx key pair
+	derivation := crypto.KeyDerivation(&addr.ViewKey, tx_secret_key) // keyderivation using wallet address view key
+	index_within_tx := uint64(0)
 
 	// this becomes the key within Vout
-    ehphermal_public_key := derivation.KeyDerivation_To_PublicKey(index_within_tx, addr.SpendKey)
-    
-    return fmt.Sprintf("%s%s", tx_public_key,ehphermal_public_key)
-        
-        
+	ehphermal_public_key := derivation.KeyDerivation_To_PublicKey(index_within_tx, addr.SpendKey)
+
+	return fmt.Sprintf("%s%s", tx_public_key, ehphermal_public_key)
+
 }

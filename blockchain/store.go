@@ -67,8 +67,6 @@ var TOP_HEIGHT = []byte("TOP_HEIGHT")   // stores current TOP HEIGHT, only store
 var TOPO_HEIGHT = []byte("TOPO_HEIGHT") // stores current TOPO HEIGHT, only stores single value
 var TIPS = []byte("TIPS")               // this stores tips
 
-
-
 // the unique TXID or block ID becomes the solar system , which is common and saves lot of space
 
 // individual attributes becomes the planets
@@ -1331,7 +1329,7 @@ func (chain *Blockchain) store_TIPS(dbtx storage.DBTX, tips []crypto.Hash) {
 
 // this is exported for rpc server
 func (chain *Blockchain) Load_TIPS_ATOMIC(dbtx storage.DBTX) (tips []crypto.Hash) {
-     return chain.load_TIPS(dbtx)
+	return chain.load_TIPS(dbtx)
 }
 func (chain *Blockchain) load_TIPS(dbtx storage.DBTX) (tips []crypto.Hash) {
 

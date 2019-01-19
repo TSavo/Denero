@@ -108,7 +108,7 @@ type ( // array without name containing block template in hex
 		X []string
 	}
 	SubmitBlock_Result struct {
-                BLID string `json:"blid"`
+		BLID   string `json:"blid"`
 		Status string `json:"status"`
 	}
 )
@@ -173,7 +173,7 @@ type (
 		InvalidBlock   []string                   `json:"invalid_block"` // TX is invalid in this block,  0 or more
 		Ring           [][]globals.TX_Output_Data `json:"ring"`
 		SC_Keys        map[string]string          `json:"sc_keys"`
-		SCBalance        uint64                   `json:"sc_balance"`
+		SCBalance      uint64                     `json:"sc_balance"`
 		SC             dvm.SmartContract          `json:"sc"`
 		SCRAW          string                     `json:"sc_raw"`
 	}

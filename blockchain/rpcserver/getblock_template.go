@@ -41,23 +41,20 @@ type GetBlockTemplate_Handler struct{}
 // someone should not be just giving fake inputs and delay chain syncing
 var get_block_limiter = rate.NewLimiter(16.0, 8) // 16 req per sec, burst of 8 req is okay
 
-
 func (h GetBlockTemplate_Handler) ServeJSONRPC(c context.Context, params *fastjson.RawMessage) (interface{}, *jsonrpc.Error) {
 	var p structures.GetBlockTemplate_Params
 	if err := jsonrpc.Unmarshal(params, &p); err != nil {
 		return nil, err
 	}
-	
-	
+
 	if !get_block_limiter.Allow() { // if rate limiter allows, then add block to chain
 		logger.Warnf("Too many get block template requests per sec rejected by chain.")
-                
-                return nil,&jsonrpc.Error{
-		Code:    jsonrpc.ErrorCodeInvalidRequest,
-		Message: "Too many get block template requests per sec rejected by chain.",
-	}
-	
-            
+
+		return nil, &jsonrpc.Error{
+			Code:    jsonrpc.ErrorCodeInvalidRequest,
+			Message: "Too many get block template requests per sec rejected by chain.",
+		}
+
 	}
 
 	/*
@@ -80,7 +77,7 @@ func (h GetBlockTemplate_Handler) ServeJSONRPC(c context.Context, params *fastjs
 			Status: "Reserve size should be > 0 and < 255",
 		}, nil
 	}
-	
+
 	bl, block_hashing_blob_hex, block_template_hex, reserved_pos := chain.Create_new_block_template_mining(chain.Get_Top_ID(), *miner_address, int(p.Reserve_size))
 
 	prev_hash := ""

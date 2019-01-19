@@ -145,22 +145,22 @@ func Test_Transaction_BP_Simple_Full_test(t *testing.T) {
 	if tx.RctSignature.VerifyRctSimpleBulletProof() != true || tx.RctSignature.Verify() != true {
 		t.Fatalf("Tx crypto full test failed")
 	}
-	
+
 	// check whether key image test fails
 	{
-		
+
 		tx.RctSignature.MlsagSigs[0].II[0][0] = 0 // patch first keyimage byte
 		if tx.RctSignature.VerifyRctSimpleBulletProof() == true || tx.RctSignature.Verify() == true {
-		t.Fatalf("Tx Ringct should have failed but it passed")
+			t.Fatalf("Tx Ringct should have failed but it passed")
 		}
 		tx.RctSignature.MlsagSigs[0].II[0][0] = 0xb8 // restore for another test
 	}
-	
+
 	{
-		
+
 		tx.RctSignature.MlsagSigs[1].II[0][0] = 0 // patch second keyimage byte
 		if tx.RctSignature.VerifyRctSimpleBulletProof() == true || tx.RctSignature.Verify() == true {
-		t.Fatalf("Tx Ringct should have failed but it passed")
+			t.Fatalf("Tx Ringct should have failed but it passed")
 		}
 		tx.RctSignature.MlsagSigs[1].II[0][0] = 0x72 // restore for another test
 	}
@@ -168,34 +168,31 @@ func Test_Transaction_BP_Simple_Full_test(t *testing.T) {
 	{
 		tx.RctSignature.MixRing[0][0].Destination[0] = 0 // patch Destination byte
 		if tx.RctSignature.VerifyRctSimpleBulletProof() == true || tx.RctSignature.Verify() == true {
-		t.Fatalf("Tx Ringct should have failed but it passed")
+			t.Fatalf("Tx Ringct should have failed but it passed")
 		}
 		tx.RctSignature.MixRing[0][0].Destination[0] = 0x2f
 	}
-	
-	
+
 	{
 		tx.RctSignature.MixRing[0][0].Mask[0] = 0 // patch Mask byte
 		if tx.RctSignature.VerifyRctSimpleBulletProof() == true || tx.RctSignature.Verify() == true {
-		t.Fatalf("Tx Ringct should have failed but it passed")
+			t.Fatalf("Tx Ringct should have failed but it passed")
 		}
 		tx.RctSignature.MixRing[0][0].Mask[0] = 0x14
 	}
-	
-	
-		{
+
+	{
 		tx.RctSignature.MixRing[1][0].Destination[0] = 0 // patch Destination byte
 		if tx.RctSignature.VerifyRctSimpleBulletProof() == true || tx.RctSignature.Verify() == true {
-		t.Fatalf("Tx Ringct should have failed but it passed")
+			t.Fatalf("Tx Ringct should have failed but it passed")
 		}
 		tx.RctSignature.MixRing[1][0].Destination[0] = 0x63
 	}
-	
-	
+
 	{
 		tx.RctSignature.MixRing[1][0].Mask[0] = 0 // patch Mask byte
 		if tx.RctSignature.VerifyRctSimpleBulletProof() == true || tx.RctSignature.Verify() == true {
-		t.Fatalf("Tx Ringct should have failed but it passed")
+			t.Fatalf("Tx Ringct should have failed but it passed")
 		}
 		tx.RctSignature.MixRing[1][0].Mask[0] = 0x0f
 	}
@@ -203,18 +200,17 @@ func Test_Transaction_BP_Simple_Full_test(t *testing.T) {
 	// check dependency of prefix hash
 
 	{
-		tx.RctSignature.Message[0]= 0
+		tx.RctSignature.Message[0] = 0
 		if tx.RctSignature.VerifyRctSimpleBulletProof() == true || tx.RctSignature.Verify() == true {
-		t.Fatalf("Tx Ringct should have failed but it passed")
+			t.Fatalf("Tx Ringct should have failed but it passed")
 		}
 		tx.RctSignature.Message = crypto.Key(tx.GetPrefixHash())
 
 	}
-	
+
 	// test whether it passes range proof
 	if tx.RctSignature.VerifyRctSimpleBulletProof() != true || tx.RctSignature.Verify() != true {
 		t.Fatalf("Tx crypto full test failed")
 	}
-
 
 }

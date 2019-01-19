@@ -50,12 +50,12 @@ type TX_Sorting_struct struct {
 // we can always come back and rewrite it
 // NOTE: the pool is now persistant
 type Mempool struct {
-	txs           sync.Map //map[crypto.Hash]*mempool_object
-	key_images    sync.Map //map[crypto.Hash]bool // contains key images of all txs
-	sorted_by_fee []crypto.Hash        // contains txids sorted by fees
-	sorted        []TX_Sorting_struct  // contains TX sorting information, so as new block can be forged easily
-	modified      bool                 // used to monitor whethel mem pool contents have changed,
-	height        uint64               // track blockchain height
+	txs           sync.Map            //map[crypto.Hash]*mempool_object
+	key_images    sync.Map            //map[crypto.Hash]bool // contains key images of all txs
+	sorted_by_fee []crypto.Hash       // contains txids sorted by fees
+	sorted        []TX_Sorting_struct // contains TX sorting information, so as new block can be forged easily
+	modified      bool                // used to monitor whethel mem pool contents have changed,
+	height        uint64              // track blockchain height
 
 	P2P_TX_Relayer p2p_TX_Relayer // actual pointer, setup by the dero daemon during runtime
 
@@ -165,7 +165,7 @@ func Init_Mempool(params map[string]interface{}) (*Mempool, error) {
 				result := mempool.Mempool_Add_TX(objects[i].Tx, 0)
 				if result { // setup time
 					//mempool.txs[objects[i].Tx.GetHash()] = &objects[i] // setup time and other artifacts
-					mempool.txs.Store(objects[i].Tx.GetHash(),&objects[i] )
+					mempool.txs.Store(objects[i].Tx.GetHash(), &objects[i])
 				}
 			}
 		}
@@ -203,7 +203,7 @@ func (pool *Mempool) HouseKeeping(height uint64, Verifier func(*transaction.Tran
 	var delete_list []crypto.Hash
 
 	pool.txs.Range(func(k, value interface{}) bool {
-		txhash :=  k.(crypto.Hash)
+		txhash := k.(crypto.Hash)
 		v := value.(*mempool_object)
 
 		if height > v.Height { // verify all tx in pool for double spending
@@ -232,7 +232,6 @@ func (pool *Mempool) HouseKeeping(height uint64, Verifier func(*transaction.Tran
 		return true
 	})
 
-
 	for i := range delete_list {
 		pool.Mempool_Delete_TX(delete_list[i])
 	}
@@ -250,7 +249,6 @@ func (pool *Mempool) Shutdown() {
 
 	// collect all txs in pool and serialize them and store them
 	var objects []mempool_object
-
 
 	pool.txs.Range(func(k, value interface{}) bool {
 		v := value.(*mempool_object)
@@ -319,15 +317,15 @@ func (pool *Mempool) Mempool_Add_TX(tx *transaction.Transaction, Height uint64) 
 	// we should also extract all key images and add them to have multiple pending
 	for i := 0; i < len(tx.Vin); i++ {
 		if _, ok := pool.key_images.Load(tx.Vin[i].(transaction.Txin_to_key).K_image); ok {
-			rlog.Warnf("TX using inputs  which have already been used, Possible Double spend attack rejected txid %s kimage %s",  tx_hash,
-				 tx.Vin[i].(transaction.Txin_to_key).K_image)
+			rlog.Warnf("TX using inputs  which have already been used, Possible Double spend attack rejected txid %s kimage %s", tx_hash,
+				tx.Vin[i].(transaction.Txin_to_key).K_image)
 			return false
 		}
 	}
 
 	// add all the key images to check double spend attack within the pool
 	for i := 0; i < len(tx.Vin); i++ {
-		pool.key_images.Store(tx.Vin[i].(transaction.Txin_to_key).K_image,true) // add element to map for next check
+		pool.key_images.Store(tx.Vin[i].(transaction.Txin_to_key).K_image, true) // add element to map for next check
 	}
 
 	// we are here means we can add it to pool
@@ -338,7 +336,7 @@ func (pool *Mempool) Mempool_Add_TX(tx *transaction.Transaction, Height uint64) 
 	object.Size = uint64(len(tx.Serialize()))
 	object.FEEperBYTE = tx.RctSignature.Get_TX_Fee() / object.Size
 
-	pool.txs.Store(tx_hash,&object)
+	pool.txs.Store(tx_hash, &object)
 	pool.modified = true // pool has been modified
 
 	//pool.sort_list() // sort and update pool list
@@ -383,8 +381,6 @@ func (pool *Mempool) Mempool_Delete_TX(txid crypto.Hash) (tx *transaction.Transa
 		return nil
 	}
 
-
-
 	// we reached here means, we have the tx remove it from our list, do maintainance cleapup and discard it
 	object := objecti.(*mempool_object)
 	pool.txs.Delete(txid)
@@ -401,8 +397,8 @@ func (pool *Mempool) Mempool_Delete_TX(txid crypto.Hash) (tx *transaction.Transa
 
 // get specific tx from mem pool without removing it
 func (pool *Mempool) Mempool_Get_TX(txid crypto.Hash) (tx *transaction.Transaction) {
-//	pool.Lock()
-//	defer pool.Unlock()
+	//	pool.Lock()
+	//	defer pool.Unlock()
 
 	var ok bool
 	var objecti interface{}
@@ -421,16 +417,16 @@ func (pool *Mempool) Mempool_Get_TX(txid crypto.Hash) (tx *transaction.Transacti
 
 // return list of all txs in pool
 func (pool *Mempool) Mempool_List_TX() []crypto.Hash {
-//	pool.Lock()
-//	defer pool.Unlock()
+	//	pool.Lock()
+	//	defer pool.Unlock()
 
 	var list []crypto.Hash
 
 	pool.txs.Range(func(k, value interface{}) bool {
-		 txhash  := k.(crypto.Hash)
+		txhash := k.(crypto.Hash)
 		//v := value.(*mempool_object)
 		//objects = append(objects, *v)
-		 list = append(list,txhash)
+		list = append(list, txhash)
 		return true
 	})
 
@@ -445,17 +441,17 @@ func (pool *Mempool) Mempool_List_TX() []crypto.Hash {
 
 // passes back sorting information and length information for easier new block forging
 func (pool *Mempool) Mempool_List_TX_SortedInfo() []TX_Sorting_struct {
-//	pool.Lock()
-//	defer pool.Unlock()
+	//	pool.Lock()
+	//	defer pool.Unlock()
 
 	_, data := pool.sort_list() // sort and update pool list
 	return data
 
-/*	// list should be as big as spurce list
-	list := make([]TX_Sorting_struct, len(pool.sorted), len(pool.sorted))
-	copy(list, pool.sorted) // return list sorted by fees
+	/*	// list should be as big as spurce list
+		list := make([]TX_Sorting_struct, len(pool.sorted), len(pool.sorted))
+		copy(list, pool.sorted) // return list sorted by fees
 
-	return list
+		return list
 	*/
 }
 
@@ -469,15 +465,14 @@ func (pool *Mempool) Mempool_Print() {
 	var vlist []*mempool_object
 
 	pool.txs.Range(func(k, value interface{}) bool {
-		 txhash  := k.(crypto.Hash)
+		txhash := k.(crypto.Hash)
 		v := value.(*mempool_object)
 		//objects = append(objects, *v)
-		 klist = append(klist,txhash)
-		 vlist = append(vlist,v)
+		klist = append(klist, txhash)
+		vlist = append(vlist, v)
 
 		return true
 	})
-
 
 	fmt.Printf("Total TX in mempool = %d\n", len(klist))
 	fmt.Printf("%20s  %14s %7s %7s %6s %32s\n", "Added", "Last Relayed", "Relayed", "Size", "Height", "TXID")
@@ -495,16 +490,15 @@ func (pool *Mempool) Mempool_flush() {
 	var list []crypto.Hash
 
 	pool.txs.Range(func(k, value interface{}) bool {
-		 txhash  := k.(crypto.Hash)
+		txhash := k.(crypto.Hash)
 		//v := value.(*mempool_object)
 		//objects = append(objects, *v)
-		 list = append(list,txhash)
+		list = append(list, txhash)
 		return true
 	})
 
 	fmt.Printf("Total TX in mempool = %d \n", len(list))
 	fmt.Printf("Flushing mempool \n")
-
 
 	for i := range list {
 		pool.Mempool_Delete_TX(list[i])
@@ -514,25 +508,24 @@ func (pool *Mempool) Mempool_flush() {
 // sorts the pool internally
 // this function assummes lock is already taken
 // ??? if we  selecting transactions randomly, why to keep them sorted
-func (pool *Mempool) sort_list() ([]crypto.Hash, []TX_Sorting_struct){
+func (pool *Mempool) sort_list() ([]crypto.Hash, []TX_Sorting_struct) {
 
-	data := make([]TX_Sorting_struct,0,512) // we are rarely expectingmore than this entries in mempool
+	data := make([]TX_Sorting_struct, 0, 512) // we are rarely expectingmore than this entries in mempool
 	// collect data from pool for sorting
 
 	pool.txs.Range(func(k, value interface{}) bool {
-		 txhash  := k.(crypto.Hash)
-		 v := value.(*mempool_object)
-		 if v.Height <= pool.height {
+		txhash := k.(crypto.Hash)
+		v := value.(*mempool_object)
+		if v.Height <= pool.height {
 			data = append(data, TX_Sorting_struct{Hash: txhash, FeesPerByte: v.FEEperBYTE, Size: v.Size})
 		}
 		return true
 	})
 
-
 	// inverted comparision sort to do descending sort
 	sort.SliceStable(data, func(i, j int) bool { return data[i].FeesPerByte > data[j].FeesPerByte })
 
-	sorted_list := make([]crypto.Hash,0,len(data))
+	sorted_list := make([]crypto.Hash, 0, len(data))
 	//pool.sorted_by_fee = pool.sorted_by_fee[:0] // empty old slice
 
 	for i := range data {
@@ -566,11 +559,10 @@ func (pool *Mempool) Relayer_and_Cleaner() {
 
 		//loggerpool.Warnf("send Pool lock taken")
 
-
 		pool.txs.Range(func(ktmp, value interface{}) bool {
-		 k  := ktmp.(crypto.Hash)
-		 v := value.(*mempool_object)
-	
+			k := ktmp.(crypto.Hash)
+			v := value.(*mempool_object)
+
 			select { // exit fast of possible
 			case <-pool.Exit_Mutex:
 				pool.Unlock()
@@ -579,7 +571,7 @@ func (pool *Mempool) Relayer_and_Cleaner() {
 			}
 
 			if sent_count > 200 { // send a burst of 200 txs max in 1 go
-				return false;
+				return false
 			}
 
 			if v.Height <= pool.height { // only carry out activities for valid txs
@@ -597,17 +589,16 @@ func (pool *Mempool) Relayer_and_Cleaner() {
 							sent_count++
 
 							//loggerpool.Debugf("%d  %d\n",time.Now().Unix(), v.RelayedAt)
-							rlog.Tracef(1,"Relayed %s to %d peers (%d %d)", k, relayed_count, v.Relayed, (time.Now().Unix() - v.RelayedAt))
+							rlog.Tracef(1, "Relayed %s to %d peers (%d %d)", k, relayed_count, v.Relayed, (time.Now().Unix() - v.RelayedAt))
 							v.RelayedAt = time.Now().Unix()
 							//loggerpool.Debugf("%d  %d",time.Now().Unix(), v.RelayedAt)
 						}
 					}
 				}
 			}
-			 
-		return true
-	})
 
+			return true
+		})
 
 		// loggerpool.Warnf("send Pool lock released")
 		//pool.Unlock()

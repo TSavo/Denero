@@ -223,7 +223,6 @@ func connect_with_endpoint(endpoint string, sync_node bool) {
 	tcpc.SetKeepAlivePeriod(8 * time.Second)
 	tcpc.SetLinger(0) // discard any pending data
 
-
 	//conn.SetKeepAlive(true) // set keep alive true
 	//conn.SetKeepAlivePeriod(10*time.Second) // keep alive every 10 secs
 
@@ -342,7 +341,7 @@ func P2P_Server_v2() {
 	//l, err := tls.Listen("tcp", default_address, tlsconfig) // listen as TLS server
 
 	// listen to incoming tcp connections tls style
-	l, err := net.Listen("tcp", default_address)  // listen as simple TCP server
+	l, err := net.Listen("tcp", default_address) // listen as simple TCP server
 	if err != nil {
 		logger.Fatalf("Could not listen on %s, err %s", default_address, err)
 	}
@@ -372,18 +371,17 @@ func P2P_Server_v2() {
 		} else {
 
 			tcpc := conn.(*net.TCPConn)
-	// detection time: tcp_keepalive_time + tcp_keepalive_probes + tcp_keepalive_intvl
-	// default on linux:  30 + 8 * 30
-	// default on osx:    30 + 8 * 75
-	tcpc.SetKeepAlive(true)
-	tcpc.SetKeepAlivePeriod(8 * time.Second)
-	tcpc.SetLinger(0) // discard any pending data
+			// detection time: tcp_keepalive_time + tcp_keepalive_probes + tcp_keepalive_intvl
+			// default on linux:  30 + 8 * 30
+			// default on osx:    30 + 8 * 75
+			tcpc.SetKeepAlive(true)
+			tcpc.SetKeepAlivePeriod(8 * time.Second)
+			tcpc.SetLinger(0) // discard any pending data
 
-	tlsconn := tls.Server(conn,tlsconfig)
-	go Handle_Connection(tlsconn, raddr, true, false) // handle connection in a different go routine
-	
+			tlsconn := tls.Server(conn, tlsconfig)
+			go Handle_Connection(tlsconn, raddr, true, false) // handle connection in a different go routine
 
-	//go Handle_Connection(conn, raddr, true, false) // handle connection in a different go routine
+			//go Handle_Connection(conn, raddr, true, false) // handle connection in a different go routine
 		}
 	}
 }

@@ -93,12 +93,12 @@ type Chain_Request_Struct struct { // our version of chain
 }
 
 type Chain_Response_Struct struct { // peers gives us point where to get the chain
-	Command      uint64        `msgpack:"COMMAND"`
-	Common       Common_Struct `msgpack:"COMMON"` // add all fields of Common
-	Start_height int64         `msgpack:"SH"`
-	Start_topoheight int64     `msgpack:"STH"`
-	Block_list   [][32]byte    `msgpack:"BLIST"`
-	TopBlocks    [][32]byte    `msgpack:"TOPBLOCKS"` // top blocks used for faster syncronisation of alt-tips
+	Command          uint64        `msgpack:"COMMAND"`
+	Common           Common_Struct `msgpack:"COMMON"` // add all fields of Common
+	Start_height     int64         `msgpack:"SH"`
+	Start_topoheight int64         `msgpack:"STH"`
+	Block_list       [][32]byte    `msgpack:"BLIST"`
+	TopBlocks        [][32]byte    `msgpack:"TOPBLOCKS"` // top blocks used for faster syncronisation of alt-tips
 	// this contains all blocks hashes for the last 10 heights, heightwise ordered
 
 }

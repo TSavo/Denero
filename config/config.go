@@ -71,7 +71,7 @@ const CRYPTONOTE_FUTURE_TIME_LIMIT = 2
 // we can easily improve TPS by changing few parameters in this file
 // the resources compute/network may not be easy for the developing countries
 // we need to trade of TPS  as per community
-const CRYPTONOTE_MAX_BLOCK_SIZE = uint64((1 * 1024 * 1024) + (256*1024 )) // max block size limit
+const CRYPTONOTE_MAX_BLOCK_SIZE = uint64((1 * 1024 * 1024) + (256 * 1024)) // max block size limit
 
 const CRYPTONOTE_MAX_TX_SIZE = 300 * 1024 // max size
 
@@ -84,14 +84,13 @@ const FEE_PER_KB = uint64(1000000000) // .001 dero per kb
 
 // mainnet botstraps at 200 MH
 //const MAINNET_BOOTSTRAP_DIFFICULTY = uint64(200 *  1000* 1000 * BLOCK_TIME)
-const MAINNET_BOOTSTRAP_DIFFICULTY = uint64(200 *1000*1000 * BLOCK_TIME)
-const MAINNET_MINIMUM_DIFFICULTY = uint64(1000*1000 * BLOCK_TIME) // 2KH
+const MAINNET_BOOTSTRAP_DIFFICULTY = uint64(200 * 1000 * 1000 * BLOCK_TIME)
+const MAINNET_MINIMUM_DIFFICULTY = uint64(1000 * 1000 * BLOCK_TIME) // 2KH
 
 // testnet bootstraps at 1 MH
 //const  TESTNET_BOOTSTRAP_DIFFICULTY = uint64(1000*1000*BLOCK_TIME)
 const TESTNET_BOOTSTRAP_DIFFICULTY = uint64(800 * BLOCK_TIME) // testnet bootstrap at 800 H/s
-const TESTNET_MINIMUM_DIFFICULTY = uint64(800 * BLOCK_TIME) // 800 H
-
+const TESTNET_MINIMUM_DIFFICULTY = uint64(800 * BLOCK_TIME)   // 800 H
 
 // this single parameter controls lots of various parameters
 // within the consensus, it should never go below 7

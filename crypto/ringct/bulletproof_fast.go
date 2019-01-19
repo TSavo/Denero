@@ -74,12 +74,11 @@ func (proof *BulletProof) BULLETPROOF_Verify_fast() (result bool) {
 		//Proof is not for 64 bits
 		return false
 	}
-	
+
 	// these checks try to filter out rogue inputs
-	if proof.BULLETPROOF_BasicChecks() == false{
-            return false
-        }
-    
+	if proof.BULLETPROOF_BasicChecks() == false {
+		return false
+	}
 
 	logN := len(proof.L)
 	N := int(1 << uint(logN))

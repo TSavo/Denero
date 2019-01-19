@@ -158,7 +158,7 @@ func (r *RPCServer) Run() {
 	if err := mr.RegisterMethod("gettxpool", GetTxPool_Handler{}, structures.GetTxPool_Params{}, structures.GetTxPool_Result{}); err != nil {
 		log.Fatalln(err)
 	}
-	
+
 	if err := mr.RegisterMethod("is_key_image_spent", IsKeyImageSpent_Handler{}, structures.Is_Key_Image_Spent_Params{}, structures.Is_Key_Image_Spent_Result{}); err != nil {
 		log.Fatalln(err)
 	}
@@ -189,36 +189,33 @@ func (r *RPCServer) Run() {
 	//  but for certain reasons, we are not pinning  them
 	//w.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
 	cfg := &tls.Config{
-       /* MinVersion:               tls.VersionTLS12,
-        CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
-        PreferServerCipherSuites: true,
-        CipherSuites: []uint16{
-            tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-            tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-            tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
-            tls.TLS_RSA_WITH_AES_256_CBC_SHA,
-        },*/
-    }
-    
+		/* MinVersion:               tls.VersionTLS12,
+		   CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
+		   PreferServerCipherSuites: true,
+		   CipherSuites: []uint16{
+		       tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+		       tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+		       tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+		       tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+		   },*/
+	}
+
 	logger.Infof("RPC  will listen on %s", default_address)
 	r.Lock()
 	r.srv = &http.Server{
-            Addr: default_address,
-            Handler: r.mux,
-            ReadTimeout: 5 * time.Second,
-            ReadHeaderTimeout: 5 * time.Second,
-            WriteTimeout: 40 * time.Second,
-            TLSConfig:    cfg,
-            TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
-            
-        }
+		Addr:              default_address,
+		Handler:           r.mux,
+		ReadTimeout:       5 * time.Second,
+		ReadHeaderTimeout: 5 * time.Second,
+		WriteTimeout:      40 * time.Second,
+		TLSConfig:         cfg,
+		TLSNextProto:      make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
+	}
 	r.Unlock()
 
-        
-        // serve any static files from this directory
-        r.mux.Handle("/static/", http.FileServer(http.Dir("./webroot")))
-        
-        
+	// serve any static files from this directory
+	r.mux.Handle("/static/", http.FileServer(http.Dir("./webroot")))
+
 	//r.mux.HandleFunc("/", hello)
 	r.mux.Handle("/json_rpc", mr)
 
@@ -252,93 +249,84 @@ func (r *RPCServer) Run() {
 		r.mux.HandleFunc("/metrics", prometheus.InstrumentHandler("dero", promhttp.HandlerFor(metrics.Registry, promhttp.HandlerOpts{})))
 
 	}
-	
 
 	//r.mux.HandleFunc("/json_rpc/debug", mr.ServeDebug)
-	
-	//r.srv.SetKeepAlivesEnabled(true) 
-	
-	
-  
-            wrappedMux := NewInternalOrFileSystem(r.mux) 
-            r.srv.Handler = wrappedMux;
 
-        // the tls keys self certified can be generated using
-        // openssl ecparam -genkey -name secp384r1 -out server.key
-        // openssl req -new -x509 -sha256 -key server.key -out server.crt -days 3650
+	//r.srv.SetKeepAlivesEnabled(true)
 
-        if _, err := os.Stat("./keys/server.crt"); !os.IsNotExist(err){
-            if _, err := os.Stat("./keys/server.key"); !os.IsNotExist(err){
-                if err := r.srv.ListenAndServeTLS("keys/server.crt","keys/server.key"); err != http.ErrServerClosed {
-                    logger.Warnf("ERR TLS listening to address err %s", err)
-                }
-            }
-        }else{
-            if err := r.srv.ListenAndServe(); err != http.ErrServerClosed {
-		logger.Warnf("ERR listening to address err %s", err)
-            }
-        }
+	wrappedMux := NewInternalOrFileSystem(r.mux)
+	r.srv.Handler = wrappedMux
+
+	// the tls keys self certified can be generated using
+	// openssl ecparam -genkey -name secp384r1 -out server.key
+	// openssl req -new -x509 -sha256 -key server.key -out server.crt -days 3650
+
+	if _, err := os.Stat("./keys/server.crt"); !os.IsNotExist(err) {
+		if _, err := os.Stat("./keys/server.key"); !os.IsNotExist(err) {
+			if err := r.srv.ListenAndServeTLS("keys/server.crt", "keys/server.key"); err != http.ErrServerClosed {
+				logger.Warnf("ERR TLS listening to address err %s", err)
+			}
+		}
+	} else {
+		if err := r.srv.ListenAndServe(); err != http.ErrServerClosed {
+			logger.Warnf("ERR listening to address err %s", err)
+		}
+	}
 
 }
-
 
 //this middleware see whether a request can be served from the filesystem
 type InternalOrFileSystem struct {
-    handler http.Handler
+	handler http.Handler
 }
 
 //ServeHTTP handles the request by passing it to the real
-//handler 
+//handler
 func (l *InternalOrFileSystem) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-    start := time.Now()
-    _ = start
-    
-    w.Header().Set("Access-Control-Allow-Origin", "*")
-    w.Header().Set("Access-Control-Max-Age", "3600")
-    w.Header().Set("Access-Control-Allow-Credentials", "true")
-    w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE")
-    w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With")
-    
-    // more protections
-    w.Header().Set("X-Frame-Options", "DENY") // never load in an iframe
-    w.Header().Set("X-XSS-Protection", "1; mode=block") //  do we need XSS protection, since everything is on client
-    w.Header().Set("Content-Security-Policy", "default-src 'self' 'unsafe-inline' 'unsafe-eval' ; img-src 'self' data: ") // CSP disable access to all other domains
+	start := time.Now()
+	_ = start
 
-    
-    // enable caching for static assets
-    if strings.Contains(r.URL.Path,"/static") || r.URL.Path == "/" {
-         w.Header().Set("Cache-Control", "public, max-age=7776000, must-revalidate")
-    }
-    
-    
-    // NOTE: redirect /  to wallet
-    // NOTE: use hard-coded paths, other directory traversal attacks are possible
-    if r.URL.Path == "/" ||  r.URL.Path == "/index.html" {
-         //http.ServeFile(w, r, "./webroot/static/wallet.html") // this does not sent content-type
-         
-         file, err := os.Open("./webroot/static/wallet.html")
-        if err != nil {
-            w.WriteHeader(http.StatusInternalServerError)
-            http.Error(w, fmt.Sprintf("Unable to open and read file : %v", err),404)
-            return
-        }
-        defer file.Close()
-        
-        http.ServeContent(w, r, "index.html", time.Now(), file) // this will properly set the headers
-        return
-        }
-            
-    
-    
-    l.handler.ServeHTTP(w, r) // pass request to RPC handler
-   // log.Printf("%s %s %v", r.Method, r.URL.Path, time.Since(start))
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Max-Age", "3600")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With")
+
+	// more protections
+	w.Header().Set("X-Frame-Options", "DENY")                                                                             // never load in an iframe
+	w.Header().Set("X-XSS-Protection", "1; mode=block")                                                                   //  do we need XSS protection, since everything is on client
+	w.Header().Set("Content-Security-Policy", "default-src 'self' 'unsafe-inline' 'unsafe-eval' ; img-src 'self' data: ") // CSP disable access to all other domains
+
+	// enable caching for static assets
+	if strings.Contains(r.URL.Path, "/static") || r.URL.Path == "/" {
+		w.Header().Set("Cache-Control", "public, max-age=7776000, must-revalidate")
+	}
+
+	// NOTE: redirect /  to wallet
+	// NOTE: use hard-coded paths, other directory traversal attacks are possible
+	if r.URL.Path == "/" || r.URL.Path == "/index.html" {
+		//http.ServeFile(w, r, "./webroot/static/wallet.html") // this does not sent content-type
+
+		file, err := os.Open("./webroot/static/wallet.html")
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("Unable to open and read file : %v", err), 404)
+			return
+		}
+		defer file.Close()
+
+		http.ServeContent(w, r, "index.html", time.Now(), file) // this will properly set the headers
+		return
+	}
+
+	l.handler.ServeHTTP(w, r) // pass request to RPC handler
+	// log.Printf("%s %s %v", r.Method, r.URL.Path, time.Since(start))
 }
 
 //NewLogger constructs a new middleware handler to hook some static file requests
 func NewInternalOrFileSystem(handlerToWrap http.Handler) *InternalOrFileSystem {
-    return &InternalOrFileSystem{handlerToWrap}
+	return &InternalOrFileSystem{handlerToWrap}
 }
-
 
 func hello(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, "Hello world!")

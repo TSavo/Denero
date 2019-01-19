@@ -177,8 +177,7 @@ func (chain *Blockchain) write_output_index(dbtx storage.DBTX, block_id crypto.H
 
 	// now loops through all the transactions, and store there ouutputs also
 	// however as per client protocol, only process accepted transactions
-	
-	
+
 	for i := 0; i < len(bl.Tx_hashes); i++ { // load all tx one by one
 
 		if !chain.IS_TX_Valid(dbtx, block_id, bl.Tx_hashes[i]) { // skip invalid TX
@@ -203,14 +202,12 @@ func (chain *Blockchain) write_output_index(dbtx storage.DBTX, block_id crypto.H
 		// TODO unlock specific outputs on specific height
 		o.Unlock_Height = uint64(height) + config.NORMAL_TX_AMOUNT_UNLOCK
 
-		
-
 		// zero out fields between tx
 		o.Tx_Public_Key = crypto.Key(ZERO_HASH)
 		o.PaymentID = o.PaymentID[:0]
 
 		extra_parsed := tx.Parse_Extra()
-                key_images_done := false
+		key_images_done := false
 		// tx has been loaded, now lets get the vout
 		for j := uint64(0); j < uint64(len(tx.Vout)); j++ {
 
@@ -232,32 +229,31 @@ func (chain *Blockchain) write_output_index(dbtx storage.DBTX, block_id crypto.H
 				o.Unlock_Height = tx.Unlock_Time
 			}
 
-			if hard_fork_version_current >= 3 && o.Unlock_Height  != 0 {
+			if hard_fork_version_current >= 3 && o.Unlock_Height != 0 {
 				if o.Unlock_Height < config.CRYPTONOTE_MAX_BLOCK_NUMBER {
-					if o.Unlock_Height  < (o.Height + 1000) {
+					if o.Unlock_Height < (o.Height + 1000) {
 						o.Unlock_Height = o.Height + 1000
 					}
-				}else{
+				} else {
 					if o.Unlock_Height < (o.Block_Time + 12000) {
-						 o.Unlock_Height = o.Block_Time + 12000
+						o.Unlock_Height = o.Block_Time + 12000
 					}
 				}
 			}
 
 			// include the key image list in the first output itself
 			// rest all the outputs donot contain the keyimage
-			
-			if key_images_done  {
-                             o.Key_Images =  o.Key_Images[:0]
-                        }else{
-                            // build the key image list and pack it
-                            o.Key_Images =  o.Key_Images[:0]
-                            for k := 0; k < len(tx.Vin); k++ {
-                                k_image := crypto.Key(tx.Vin[k].(transaction.Txin_to_key).K_image)
-                                o.Key_Images = append(o.Key_Images, crypto.Key(k_image))
-                            }
-                        }
-			
+
+			if key_images_done {
+				o.Key_Images = o.Key_Images[:0]
+			} else {
+				// build the key image list and pack it
+				o.Key_Images = o.Key_Images[:0]
+				for k := 0; k < len(tx.Vin); k++ {
+					k_image := crypto.Key(tx.Vin[k].(transaction.Txin_to_key).K_image)
+					o.Key_Images = append(o.Key_Images, crypto.Key(k_image))
+				}
+			}
 
 			if extra_parsed {
 				// store public key if present
@@ -294,75 +290,70 @@ func (chain *Blockchain) write_output_index(dbtx storage.DBTX, block_id crypto.H
 
 			dbtx.StoreObject(BLOCKCHAIN_UNIVERSE, GALAXY_OUTPUT_INDEX, GALAXY_OUTPUT_INDEX, itob(uint64(index_start)), serialized)
 
-                        index_within_tx++
-			
-			
+			index_within_tx++
+
 			var zero crypto.Key
-			if  o.InKey.Destination != zero { // cut SC inputs from outputs
-                            //rlog.Warnf("index %d  %x %+v\n",index_start,d.InKey.Destination,o)
-                            key_images_done=true
-                            index_start++
-                        }
+			if o.InKey.Destination != zero { // cut SC inputs from outputs
+				//rlog.Warnf("index %d  %x %+v\n",index_start,d.InKey.Destination,o)
+				key_images_done = true
+				index_start++
+			}
 		}
-		
+
 		// lets add sc transactions in the output table
 		// these transactions are similiar to  miner transactions, open in amount
 		// smart contracts are live HF 4
 		if hard_fork_version_current >= 4 {
-                
-                func(){
-                    
-                // safety so if anything wrong happens during SC outputs, ignore output , should we revert the TX
-                // what about losing some value
-		if r := recover(); r != nil {
-			logger.Warnf("Recovered while building output index for SC , Stack trace below block_hash ")
-			logger.Warnf("Stack trace  \n%s", debug.Stack())
+
+			func() {
+
+				// safety so if anything wrong happens during SC outputs, ignore output , should we revert the TX
+				// what about losing some value
+				if r := recover(); r != nil {
+					logger.Warnf("Recovered while building output index for SC , Stack trace below block_hash ")
+					logger.Warnf("Stack trace  \n%s", debug.Stack())
+				}
+
+				changelog := chain.Load_SCChangelog(dbtx, crypto.Key(bl.Tx_hashes[i]))
+
+				//fmt.Printf("HF version 4 changelog %d  %d\n", len(changelog),len(changelog[0].TransferE) )
+
+				index_within_tx = 0
+				if len(changelog) >= 1 && len(changelog[0].TransferE) >= 1 {
+					for j := uint64(0); j < uint64(len(changelog[0].TransferE)); j++ {
+
+						o.BLID = block_id // store block id
+						o.TXID = bl.Tx_hashes[i]
+						o.Height = uint64(height)
+						o.SigType = 0
+						o.Unlock_Height = 0
+						o.PaymentID = o.PaymentID[:0]
+						o.Index_within_tx = index_within_tx
+						o.Key_Images = o.Key_Images[:0]
+
+						// generate one time keys
+						o.Tx_Public_Key, o.InKey.Destination = GetEphermalKey(crypto.Key(bl.Tx_hashes[i]), index_within_tx, changelog[0].TransferE[j].Address)
+						o.Amount = changelog[0].TransferE[j].Amount
+						o.InKey.Mask = ringct.ZeroCommitment_From_Amount(changelog[0].TransferE[j].Amount)
+						o.Index_Global = uint64(index_start)
+
+						fmt.Printf("writing SC output index %d %s\n", index_start, o.InKey.Destination)
+
+						serialized, err := msgpack.Marshal(&o)
+						if err != nil {
+							panic(err)
+						}
+
+						dbtx.StoreObject(BLOCKCHAIN_UNIVERSE, GALAXY_OUTPUT_INDEX, GALAXY_OUTPUT_INDEX, itob(uint64(index_start)), serialized)
+
+						index_start++
+						index_within_tx++
+
+					}
+
+				}
+			}()
 		}
-		
-		changelog := chain.Load_SCChangelog(dbtx,crypto.Key(bl.Tx_hashes[i]))
-                
-                //fmt.Printf("HF version 4 changelog %d  %d\n", len(changelog),len(changelog[0].TransferE) )
-                
-                index_within_tx = 0
-                if len(changelog) >= 1 && len(changelog[0].TransferE) >= 1 {
-                    for j := uint64(0); j < uint64(len(changelog[0].TransferE)); j++ {
-                        
-                        o.BLID = block_id // store block id
-                        o.TXID = bl.Tx_hashes[i]
-                        o.Height = uint64(height)
-                        o.SigType = 0
-                        o.Unlock_Height = 0
-                        o.PaymentID = o.PaymentID[:0]
-                        o.Index_within_tx = index_within_tx
-                        o.Key_Images =  o.Key_Images[:0]
-                        
-                        // generate one time keys
-                        o.Tx_Public_Key,o.InKey.Destination = GetEphermalKey(crypto.Key(bl.Tx_hashes[i]),index_within_tx, changelog[0].TransferE[j].Address)
-                        o.Amount = changelog[0].TransferE[j].Amount
-                        o.InKey.Mask = ringct.ZeroCommitment_From_Amount(changelog[0].TransferE[j].Amount)
-                        o.Index_Global = uint64(index_start)
-                        
-                        fmt.Printf("writing SC output index %d %s\n",index_start, o.InKey.Destination )
-                        
-                        
-                        
-                       
-                        serialized, err := msgpack.Marshal(&o)
-			if err != nil {
-				panic(err)
-			}
-
-			dbtx.StoreObject(BLOCKCHAIN_UNIVERSE, GALAXY_OUTPUT_INDEX, GALAXY_OUTPUT_INDEX, itob(uint64(index_start)), serialized)
-
-                        index_start++
-                        index_within_tx++
-                        
-                    }
-                    
-                    
-                }
-                }() }
-		
 
 	}
 
@@ -474,14 +465,14 @@ func (chain *Blockchain) Find_TX_Output_Index(tx_hash crypto.Hash) (offset int64
 
 		// tx has been loaded, now lets get the vout
 		//vout_count := int64(len(tx.Vout))
-		vout_count:= int64(0)
-                var zero crypto.Key
-                for j := uint64(0); j < uint64(len(tx.Vout)); j++ {
-			if  crypto.Key(tx.Vout[j].Target.(transaction.Txout_to_key).Key) != zero { // cut SC inputs from outputs
-                            vout_count++
-                        }
-                }
-		
+		vout_count := int64(0)
+		var zero crypto.Key
+		for j := uint64(0); j < uint64(len(tx.Vout)); j++ {
+			if crypto.Key(tx.Vout[j].Target.(transaction.Txout_to_key).Key) != zero { // cut SC inputs from outputs
+				vout_count++
+			}
+		}
+
 		offset += vout_count
 	}
 

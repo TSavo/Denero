@@ -23,8 +23,8 @@ import "github.com/deroproject/derosuite/crypto"
 import "github.com/deroproject/derosuite/address"
 import "github.com/deroproject/derosuite/transaction"
 import "github.com/deroproject/derosuite/crypto/ringct"
+
 //import "github.com/deroproject/derosuite/walletapi" // to decode encrypted payment ID
- 
 
 // used to encrypt payment id
 const ENCRYPTED_PAYMENT_ID_TAIL = 0x8d
@@ -92,11 +92,11 @@ func Prove(input_key string, input_addr string, input_tx string) (indexes []uint
 		return
 
 	}
-	
-	var PayID8  []byte
-	
+
+	var PayID8 []byte
+
 	if tx.Parse_Extra() {
-            // will decrypt payment ID if encrypted 
+		// will decrypt payment ID if encrypted
 		if _, ok := tx.PaymentID_map[transaction.TX_EXTRA_NONCE_ENCRYPTED_PAYMENT_ID]; ok {
 			PayID8 = tx.PaymentID_map[transaction.TX_EXTRA_NONCE_ENCRYPTED_PAYMENT_ID].([]byte)
 		}
@@ -114,7 +114,7 @@ func Prove(input_key string, input_addr string, input_tx string) (indexes []uint
 		ehphermal_public_key := derivation.KeyDerivation_To_PublicKey(uint64(index_within_tx), addr.SpendKey)
 
 		if ehphermal_public_key == tx.Vout[i].Target.(transaction.Txout_to_key).Key {
-                        found = true
+			found = true
 			//fmt.Printf("Output at index %d belongs to  %s\n",i,addr.String())
 			indexes = append(indexes, uint64(index_within_tx))
 
@@ -129,18 +129,17 @@ func Prove(input_key string, input_addr string, input_tx string) (indexes []uint
 			if result {
 				// fmt.Printf("Amount is ~ %0.8f\n", float64(amount)/(1000000000000.0))
 				amounts = append(amounts, amount)
-                                
-                            
-                            if len(PayID8) == 8 {
-                                 decrypted_pay_id := EncryptDecryptPaymentID(derivation,scalar_key,PayID8)
-                                 payids = append(payids,decrypted_pay_id)                                
-                            }
-			
-			}else{
-                            err = fmt.Errorf("TX belongs to user but amount could NOT be decoded")
-                            return
-                        }
-                        
+
+				if len(PayID8) == 8 {
+					decrypted_pay_id := EncryptDecryptPaymentID(derivation, scalar_key, PayID8)
+					payids = append(payids, decrypted_pay_id)
+				}
+
+			} else {
+				err = fmt.Errorf("TX belongs to user but amount could NOT be decoded")
+				return
+			}
+
 		}
 
 	}
@@ -151,11 +150,11 @@ func Prove(input_key string, input_addr string, input_tx string) (indexes []uint
 	  }else{
 	      fmt.Printf("Outputs do not belong to this address\n")
 	  }*/
-        
-        if !found{
-            err = fmt.Errorf("Wrong TX Key or wrong address or Outputs do not belong to this address")
-            
-        }
+
+	if !found {
+		err = fmt.Errorf("Wrong TX Key or wrong address or Outputs do not belong to this address")
+
+	}
 
 	return
 

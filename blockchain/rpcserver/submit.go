@@ -39,7 +39,7 @@ func (h SubmitBlock_Handler) ServeJSONRPC(c context.Context, params *fastjson.Ra
 	//logger.Infof("Submitting block results")
 
 	if err := jsonrpc.Unmarshal(params, &block_data); err != nil {
-                logger.Warnf("Submitted block could be json parsed")
+		logger.Warnf("Submitted block could be json parsed")
 		return nil, err
 	}
 
@@ -62,15 +62,15 @@ func (h SubmitBlock_Handler) ServeJSONRPC(c context.Context, params *fastjson.Ra
 	blid, result, err := chain.Accept_new_block(block_data_bytes, hashing_blob)
 
 	if result {
-		logger.Infof("Submitted block %s accepted",blid)
+		logger.Infof("Submitted block %s accepted", blid)
 		return structures.SubmitBlock_Result{
-                        BLID: blid.String(),
+			BLID:   blid.String(),
 			Status: "OK",
 		}, nil
 	}
 
 	if err != nil {
-		logger.Infof("Submitting block %s err %s",blid, err)
+		logger.Infof("Submitting block %s err %s", blid, err)
 		return structures.SubmitBlock_Result{
 			Status: err.Error(),
 		}, nil

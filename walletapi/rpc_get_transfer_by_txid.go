@@ -61,19 +61,18 @@ func (h Get_Transfer_By_TXID_Handler) ServeJSONRPC(c context.Context, params *fa
 		Height:      entry.Height,
 		Amount:      entry.Amount,
 		Unlock_time: entry.Unlock_Time,
-
 	}
 
 	for i := range entry.Details.Daddress {
 		result.Transfer.Destinations = append(result.Transfer.Destinations,
-			 structures.Destination{
-			 	Address:  entry.Details.Daddress[i],
-			 	Amount:  entry.Details.Amount[i],
-			 	})
+			structures.Destination{
+				Address: entry.Details.Daddress[i],
+				Amount:  entry.Details.Amount[i],
+			})
 	}
 
 	if len(entry.Details.PaymentID) >= 1 {
-		result.Transfer.Payment_ID =  entry.Details.PaymentID
+		result.Transfer.Payment_ID = entry.Details.PaymentID
 	}
 
 	result.Transfer.Type = "in"

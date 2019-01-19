@@ -80,7 +80,7 @@ func Test_RingCT_Full_block_72_2c4738d3856e8e3e8f9fc4818a9197d4911af3010e067ec56
 		//backup_byte := key_image[0]
 		tx.RctSignature.MlsagSigs[0].II[0][0] = 0 // patch keyimage byte
 		if tx.RctSignature.VerifyRctFull() == true || tx.RctSignature.Verify() == true {
-		t.Fatalf("Tx Ringct should have failed but it passed")
+			t.Fatalf("Tx Ringct should have failed but it passed")
 		}
 		tx.RctSignature.MlsagSigs[0].II[0] = key_image // restore for another test
 	}
@@ -88,14 +88,14 @@ func Test_RingCT_Full_block_72_2c4738d3856e8e3e8f9fc4818a9197d4911af3010e067ec56
 	{
 		tx.RctSignature.MixRing[0][0].Destination[0] = 0 // patch Destination byte
 		if tx.RctSignature.VerifyRctFull() == true || tx.RctSignature.Verify() == true {
-		t.Fatalf("Tx Ringct should have failed but it passed")
+			t.Fatalf("Tx Ringct should have failed but it passed")
 		}
 		tx.RctSignature.MixRing[0][0].Destination[0] = 6
 	}
 	{
 		tx.RctSignature.MixRing[0][0].Mask[0] = 0 // patch Mask byte
 		if tx.RctSignature.VerifyRctFull() == true || tx.RctSignature.Verify() == true {
-		t.Fatalf("Tx Ringct should have failed but it passed")
+			t.Fatalf("Tx Ringct should have failed but it passed")
 		}
 		tx.RctSignature.MixRing[0][0].Mask[0] = 0xc4
 	}
@@ -103,14 +103,14 @@ func Test_RingCT_Full_block_72_2c4738d3856e8e3e8f9fc4818a9197d4911af3010e067ec56
 	// check dependency of prefix hash
 
 	{
-		tx.RctSignature.Message[0]= 0
+		tx.RctSignature.Message[0] = 0
 		if tx.RctSignature.VerifyRctFull() == true || tx.RctSignature.Verify() == true {
-		t.Fatalf("Tx Ringct should have failed but it passed")
+			t.Fatalf("Tx Ringct should have failed but it passed")
 		}
 		tx.RctSignature.Message = crypto.Key(tx.GetPrefixHash())
 
 	}
-	
+
 	if tx.RctSignature.VerifyRctFull() != true || tx.RctSignature.Verify() != true {
 		t.Fatalf("Tx Ringct full test failed")
 	}

@@ -69,7 +69,7 @@ func (connection *Connection) Handle_ChainResponse(buf []byte) {
 	}
 
 	rlog.Tracef(2, "Peer wants to give chain from topoheight %d ", response.Start_height)
-        _ = config.STABLE_LIMIT
+	_ = config.STABLE_LIMIT
 
 	// we do not need reorganisation if deviation is less than  or equak to 7 blocks
 	// only pop blocks if the system has somehow deviated more than 7 blocks

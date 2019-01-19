@@ -25,8 +25,8 @@ import "encoding/binary"
 
 import "github.com/romana/rlog"
 
-import "github.com/deroproject/derosuite/crypto"
-import "github.com/deroproject/derosuite/address"
+import "../crypto"
+import "../address"
 
 // refer https://cryptonote.org/cns/cns005.txt to understand slightly more ( it DOES NOT cover everything)
 // much of these constants are understood from tx_extra.h and cryptonote_format_utils.cpp
@@ -37,20 +37,17 @@ const TX_EXTRA_PADDING EXTRA_TAG = 0 // followed by 1 byte of size, and then upt
 const TX_PUBLIC_KEY EXTRA_TAG = 1    // follwed by 32 bytes of tx public key
 const TX_EXTRA_NONCE EXTRA_TAG = 2   // followed by 1 byte of size, and then upto 255 bytes of empty nonce
 
-//const TX_EXTRA_MSG = 4   is reserved for fututure 
+//const TX_EXTRA_MSG = 4   is reserved for fututure
 
-const TX_EXTRA_ADDRESS = 0x10  // followed by 64 bytes of DERO address  // what about sub address
-const TX_EXTRA_SIG = 0x11  // followed by 64 bytes of DERO 25519 signature  
-const TX_EXTRA_SCDATA = 0x12 // smart contract to install
+const TX_EXTRA_ADDRESS = 0x10 // followed by 64 bytes of DERO address  // what about sub address
+const TX_EXTRA_SIG = 0x11     // followed by 64 bytes of DERO 25519 signature
+const TX_EXTRA_SCDATA = 0x12  // smart contract to install
 
-const TX_EXTRA_SCID = 3  // followed by 32 bytes of Smart contract TXID
+const TX_EXTRA_SCID = 3 // followed by 32 bytes of Smart contract TXID
 
-const TX_EXTRA_SC_CALL = 7 // smart contract to call 
+const TX_EXTRA_SC_CALL = 7 // smart contract to call
 
-
-
-const TX_EXTRA_MSG = 4 // followed by varint bytes of of data, and upto 40960 bytes of data  
-
+const TX_EXTRA_MSG = 4 // followed by varint bytes of of data, and upto 40960 bytes of data
 
 // TX_EXTRA_MERGE_MINING_TAG  we do NOT suppport merged mining at all
 // TX_EXTRA_MYSTERIOUS_MINERGATE_TAG  as the name says mysterious we will not bring it
@@ -59,12 +56,10 @@ const TX_EXTRA_MSG = 4 // followed by varint bytes of of data, and upto 40960 by
 const TX_EXTRA_NONCE_PAYMENT_ID EXTRA_TAG = 0           // extra nonce within a non coinbase tx, can be unencrypted, is 32 bytes in size
 const TX_EXTRA_NONCE_ENCRYPTED_PAYMENT_ID EXTRA_TAG = 1 // this is encrypted and is 9 bytes in size
 
-
 // TX_EXTRA_SC  has the following structure
 //length prefixed public address
 //length prefixed 64 byte signature
 //length prefixed data
-
 
 // the field is just named extra and contains CRITICAL information, though some is optional
 // parse extra data such as
@@ -164,55 +159,53 @@ func (tx *Transaction) Parse_Extra() (result bool) {
 			}
 
 			tx.Extra_map[TX_EXTRA_NONCE] = extra_nonce
-			
-                        case TX_EXTRA_ADDRESS:
-                            address_bytes := make([]byte, 64, 64) // 32 byte public spend key, 32 byte public viewkey
-                            
-                            n, err = buf.Read(address_bytes)
-                            if err != nil || n != 64 {
+
+		case TX_EXTRA_ADDRESS:
+			address_bytes := make([]byte, 64, 64) // 32 byte public spend key, 32 byte public viewkey
+
+			n, err = buf.Read(address_bytes)
+			if err != nil || n != 64 {
 				rlog.Tracef(1, "Extra Address could not be read ")
 				return false
-                            }
-                            
-                            var spendkey,viewkey crypto.Key
-                            copy(spendkey[:], address_bytes[0:32])
-                            copy(viewkey[:],address_bytes[32:])
-                            
-                            
-                            tx.Extra_map[TX_EXTRA_ADDRESS] = *address.NewAddressFromKeys(spendkey,viewkey)
-                        case TX_EXTRA_SIG:
-                            sig_bytes := make([]byte, 64, 64) // 32 byte Sig C , 32 byte sig R
-                            n, err = buf.Read(sig_bytes)
-                            if err != nil || n != 64 {
+			}
+
+			var spendkey, viewkey crypto.Key
+			copy(spendkey[:], address_bytes[0:32])
+			copy(viewkey[:], address_bytes[32:])
+
+			tx.Extra_map[TX_EXTRA_ADDRESS] = *address.NewAddressFromKeys(spendkey, viewkey)
+		case TX_EXTRA_SIG:
+			sig_bytes := make([]byte, 64, 64) // 32 byte Sig C , 32 byte sig R
+			n, err = buf.Read(sig_bytes)
+			if err != nil || n != 64 {
 				rlog.Tracef(1, "Extra Signature could not be read ")
 				return false
-                            }
-                            sig := crypto.Signature{}
-                            copy(sig.C[:],sig_bytes[0:32])
-                            copy(sig.R[:],sig_bytes[32:])
-                            tx.Extra_map[TX_EXTRA_SIG] = sig
-                            
-                        case TX_EXTRA_SCDATA:
-                            var sc_data_len uint64
-                            sc_data_len,err = binary.ReadUvarint(buf)
-                            if err != nil || sc_data_len == 0{
-                                rlog.Debugf( "Extra SC Data could not be read ")
-                                return false
-                            }
-                            
-                            if sc_data_len > 128*1024 { // stop ddos right now
-                                rlog.Debugf( "Extra SC Data attempting Ddos, stopping attack ")
-                                return false
-                            }
-                            
-                            data_bytes := make([]byte, sc_data_len, sc_data_len)
-                            n, err = buf.Read(data_bytes)
-                            if err != nil || n != int(sc_data_len) {
-				rlog.Debugf( "Extra SC Data could not be read, err %s n %d sc_data_len %d ", err, n, sc_data_len)
+			}
+			sig := crypto.Signature{}
+			copy(sig.C[:], sig_bytes[0:32])
+			copy(sig.R[:], sig_bytes[32:])
+			tx.Extra_map[TX_EXTRA_SIG] = sig
+
+		case TX_EXTRA_SCDATA:
+			var sc_data_len uint64
+			sc_data_len, err = binary.ReadUvarint(buf)
+			if err != nil || sc_data_len == 0 {
+				rlog.Debugf("Extra SC Data could not be read ")
 				return false
-                            }
-                            tx.Extra_map[TX_EXTRA_SCDATA] = data_bytes
-                            
+			}
+
+			if sc_data_len > 128*1024 { // stop ddos right now
+				rlog.Debugf("Extra SC Data attempting Ddos, stopping attack ")
+				return false
+			}
+
+			data_bytes := make([]byte, sc_data_len, sc_data_len)
+			n, err = buf.Read(data_bytes)
+			if err != nil || n != int(sc_data_len) {
+				rlog.Debugf("Extra SC Data could not be read, err %s n %d sc_data_len %d ", err, n, sc_data_len)
+				return false
+			}
+			tx.Extra_map[TX_EXTRA_SCDATA] = data_bytes
 
 			// NO MORE TAGS are present
 
@@ -281,34 +274,33 @@ func (tx *Transaction) Serialize_Extra() []byte {
 		buf.WriteByte(byte(len(data_bytes))) // write length of extra nonce single byte
 		buf.Write(data_bytes[:])             // write the nonce data
 	}
-	
+
 	//
 	if _, ok := tx.Extra_map[TX_EXTRA_ADDRESS]; ok {
 		buf.WriteByte(byte(TX_EXTRA_ADDRESS)) // write marker
 		addr := tx.Extra_map[TX_EXTRA_ADDRESS].(address.Address)
-		buf.Write(addr.SpendKey[:])             // write the spend key
-                buf.Write(addr.ViewKey[:])             // write the spend key
+		buf.Write(addr.SpendKey[:]) // write the spend key
+		buf.Write(addr.ViewKey[:])  // write the spend key
 	}
-	
+
 	if _, ok := tx.Extra_map[TX_EXTRA_SIG]; ok {
 		buf.WriteByte(byte(TX_EXTRA_SIG)) // write marker
 		sig := tx.Extra_map[TX_EXTRA_SIG].(crypto.Signature)
-		buf.Write(sig.C[:])             // write the C key
-                buf.Write(sig.R[:])             // write the R key
+		buf.Write(sig.C[:]) // write the C key
+		buf.Write(sig.R[:]) // write the R key
 	}
-	
+
 	if _, ok := tx.Extra_map[TX_EXTRA_SCDATA]; ok {
 		buf.WriteByte(byte(TX_EXTRA_SCDATA)) // write marker
-                
-                
+
 		data_bytes := tx.Extra_map[TX_EXTRA_SCDATA].([]byte)
-                
-                tbuf := make([]byte, binary.MaxVarintLen64)
-                n := binary.PutUvarint(tbuf, uint64(len(data_bytes)))
-                buf.Write(tbuf[:n]) 
-                fmt.Printf("serializing extra len %x\n", tbuf[:n])
-                fmt.Printf("serializing extra data %x\n", data_bytes)
-		buf.Write(data_bytes[:])             // write the data bytes
+
+		tbuf := make([]byte, binary.MaxVarintLen64)
+		n := binary.PutUvarint(tbuf, uint64(len(data_bytes)))
+		buf.Write(tbuf[:n])
+		fmt.Printf("serializing extra len %x\n", tbuf[:n])
+		fmt.Printf("serializing extra data %x\n", data_bytes)
+		buf.Write(data_bytes[:]) // write the data bytes
 	}
 
 	// NOTE: we do not support adding padding for the sake of it

@@ -232,19 +232,18 @@ func TestIntegratedAddress(t *testing.T) {
 }
 
 func Test_Bruteforce_IntegratedAddress(t *testing.T) {
-    var AddressI string = "dERijfr9y7XhWkdEPp17RJLXVoHkr2ucMdEbgGgpskhLb33732LBifWMCZhPga3EcjXoYqfM9jRv3W3bnWUSpdmKL24FBjG6ctTAEg1jrhDHh"
-    
-    var PaymentID string = "0cbd6e050cf3b73c"
-    
-    
-    for i := 0; i < 100000;i++  {
-    address, err := NewAddress(AddressI)
+	var AddressI string = "dERijfr9y7XhWkdEPp17RJLXVoHkr2ucMdEbgGgpskhLb33732LBifWMCZhPga3EcjXoYqfM9jRv3W3bnWUSpdmKL24FBjG6ctTAEg1jrhDHh"
+
+	var PaymentID string = "0cbd6e050cf3b73c"
+
+	for i := 0; i < 100000; i++ {
+		address, err := NewAddress(AddressI)
 		if err != nil {
 			t.Fatalf("%s: Failed while parsing address %s", AddressI, err)
 			continue
 		}
-		if fmt.Sprintf("%x",address.PaymentID) != PaymentID{
-                    t.Fatalf("Payment ID failed at loop %d", i)
-                }
-    }
+		if fmt.Sprintf("%x", address.PaymentID) != PaymentID {
+			t.Fatalf("Payment ID failed at loop %d", i)
+		}
+	}
 }

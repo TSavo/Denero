@@ -437,8 +437,6 @@ func Broadcast_Block(cbl *block.Complete_Block, PeerID uint64) { // if peerid is
 		}
 	}()
 
-
-
 	/*if IsSyncing() { // if we are syncing, do NOT broadcast the block
 		return
 	}*/
@@ -574,7 +572,7 @@ func Broadcast_Tx(tx *transaction.Transaction, PeerID uint64) (relayed_count int
 			// due to overheads
 			// if we are lagging or peer is lagging, do not brodcast transactions
 			peer_height := atomic.LoadInt64(&v.Height)
-			if (our_height - peer_height) > 25 ||  (our_height+5) < peer_height   {
+			if (our_height-peer_height) > 25 || (our_height+5) < peer_height {
 				continue
 			}
 
@@ -647,22 +645,18 @@ func trigger_sync() {
 
 	unique_map := UniqueConnections()
 
-
 	var clist []*Connection
 
-	for _,value := range unique_map {
+	for _, value := range unique_map {
 		clist = append(clist, value)
 
 	}
 
-	
 	// sort the list random
 	// do random shuffling, can we get away with len/2 random shuffling
 	globals.Global_Random.Shuffle(len(clist), func(i, j int) {
 		clist[i], clist[j] = clist[j], clist[i]
 	})
-
-	
 
 	for _, connection := range clist {
 

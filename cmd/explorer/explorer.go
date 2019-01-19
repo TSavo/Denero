@@ -180,21 +180,20 @@ type txinfo struct {
 	PayID32     string // 32 byte payment ID
 	PayID8      string // 8 byte encrypted payment ID
 
+	Proof_address      string // address agains which which the proving ran
+	Proof_index        int64  // proof satisfied for which index
+	Proof_amount       string // decoded amount
+	Proof_PayID8       string // decrypted 8 byte payment id
+	Proof_error        string // error if any while decoding proof
+	SC_TX_Available    string //bool   // whether this contains an SC TX
+	SC_Signer          string // whether SC signer
+	SC_Signer_verified string // whether SC signer  can be verified successfully
+	SC_DataSize        int64
+	SC_Balance         uint64            // SC SC_Balance in atomic units
+	SC_Balance_string  string            // SC_Balance in DERO
+	SC_Keys            map[string]string // SC key value of
 
-	Proof_address string // address agains which which the proving ran
-	Proof_index  int64  // proof satisfied for which index
-	Proof_amount string // decoded amount 
-	Proof_PayID8 string // decrypted 8 byte payment id
-	Proof_error  string // error if any while decoding proof
-	SC_TX_Available   string //bool   // whether this contains an SC TX 
-	SC_Signer string  // whether SC signer
-	SC_Signer_verified string  // whether SC signer  can be verified successfully
-	SC_DataSize  int64
-	SC_Balance    uint64  // SC SC_Balance in atomic units
-	SC_Balance_string string // SC_Balance in DERO
-	SC_Keys         map[string]string // SC key value of 
-	
-	SC_TX transaction.SC_Transaction 
+	SC_TX transaction.SC_Transaction
 }
 
 // any information for block which needs to be printed
@@ -371,14 +370,14 @@ func load_tx_info_from_tx(info *txinfo, tx *transaction.Transaction) (err error)
 
 	for i := 0; i < len(tx.Vout); i++ {
 		info.OutAddress = append(info.OutAddress, tx.Vout[i].Target.(transaction.Txout_to_key).Key.String())
-                
-                amt := "?"
-                
-                if tx.Vout[i].Amount != 0 {
-                    amt = globals.FormatMoney12(tx.Vout[i].Amount)
-                }
-                
-                info.OutAmount = append(info.OutAmount, amt)
+
+		amt := "?"
+
+		if tx.Vout[i].Amount != 0 {
+			amt = globals.FormatMoney12(tx.Vout[i].Amount)
+		}
+
+		info.OutAmount = append(info.OutAmount, amt)
 	}
 
 	// if outputs cannot be located, do not panic
@@ -399,34 +398,32 @@ func load_tx_info_from_tx(info *txinfo, tx *transaction.Transaction) (err error)
 	case 4:
 		info.Type = "RingCT/4 Simple Bulletproof"
 	}
-	
+
 	// add SC info
 	if tx.Verify_SC_Signature() {
-            info.SC_TX_Available = "True" 
-            info.SC_Signer_verified = "True"
-            addr :=  tx.Extra_map[transaction.TX_EXTRA_ADDRESS].(address.Address)
-            info.SC_Signer = addr.String()
-            
-            info.SC_DataSize = int64(len(tx.Extra_map[transaction.TX_EXTRA_SCDATA].([]byte)))
-            
-            
-            
-            err = msgpack.Unmarshal(tx.Extra_map[transaction.TX_EXTRA_SCDATA].([]byte), &info.SC_TX)
-					if err != nil {
-                                            info.SC_TX.SC = fmt.Sprintf("Explorer error while unmarshaling  SC TX err %s", err)
-                                        }
-                                        
-            // check if any DERO value  is attached, if yes, attach it
-	for i := 0; i < len(tx.Vout); i++ {
-            var zero crypto.Key
-		if tx.Vout[i].Amount != 0  && tx.Vout[i].Target.(transaction.Txout_to_key).Key == zero {  
-                    // amount has already been verified as genuine by ringct
-			info.SC_TX.Value = tx.Vout[i].Amount 
-			break;
-		 
-                }
-	  }
-        }
+		info.SC_TX_Available = "True"
+		info.SC_Signer_verified = "True"
+		addr := tx.Extra_map[transaction.TX_EXTRA_ADDRESS].(address.Address)
+		info.SC_Signer = addr.String()
+
+		info.SC_DataSize = int64(len(tx.Extra_map[transaction.TX_EXTRA_SCDATA].([]byte)))
+
+		err = msgpack.Unmarshal(tx.Extra_map[transaction.TX_EXTRA_SCDATA].([]byte), &info.SC_TX)
+		if err != nil {
+			info.SC_TX.SC = fmt.Sprintf("Explorer error while unmarshaling  SC TX err %s", err)
+		}
+
+		// check if any DERO value  is attached, if yes, attach it
+		for i := 0; i < len(tx.Vout); i++ {
+			var zero crypto.Key
+			if tx.Vout[i].Amount != 0 && tx.Vout[i].Target.(transaction.Txout_to_key).Key == zero {
+				// amount has already been verified as genuine by ringct
+				info.SC_TX.Value = tx.Vout[i].Amount
+				break
+
+			}
+		}
+	}
 
 	if !info.In_Pool { // find the age of block and other meta
 		var blinfo block_info
@@ -486,7 +483,7 @@ func load_tx_from_rpc(info *txinfo, txhash string) (err error) {
 		return
 	}
 
-	info.Hex =  tx_result.Txs_as_hex[0]
+	info.Hex = tx_result.Txs_as_hex[0]
 
 	tx_bin, _ := hex.DecodeString(tx_result.Txs_as_hex[0])
 	tx.DeserializeHeader(tx_bin)
@@ -513,10 +510,10 @@ func load_tx_from_rpc(info *txinfo, txhash string) (err error) {
 
 	info.SC_Balance = tx_result.Txs[0].SCBalance
 	info.SC_Balance_string = globals.FormatMoney12(tx_result.Txs[0].SCBalance)
-        for k,v := range tx_result.Txs[0].SC_Keys{
-            info.SC_Keys[k]=v
-        }
-	
+	for k, v := range tx_result.Txs[0].SC_Keys {
+		info.SC_Keys[k] = v
+	}
+
 	//fmt.Printf("tx_result %+v\n",tx_result.Txs)
 
 	return load_tx_info_from_tx(info, &tx)
@@ -563,41 +560,38 @@ func tx_handler(w http.ResponseWriter, r *http.Request) {
 	// check whether user requested proof
 
 	tx_secret_key := r.PostFormValue("txprvkey")
-	daddress :=  r.PostFormValue("deroaddress")
+	daddress := r.PostFormValue("deroaddress")
 	raw_tx_data := r.PostFormValue("raw_tx_data")
 
-	if raw_tx_data !=  "" { // gives ability to prove transactions not in the blockchain
+	if raw_tx_data != "" { // gives ability to prove transactions not in the blockchain
 		info.Hex = raw_tx_data
 	}
 
 	log.Debugf("tx key %s address %s  tx %s", tx_secret_key, daddress, tx_hex)
-	
-	if tx_secret_key != ""  && daddress != "" {
 
-	// there may be more than 1 amounts, only first one is shown
-	indexes, amounts, payids, err := proof.Prove(tx_secret_key,daddress,info.Hex)
+	if tx_secret_key != "" && daddress != "" {
 
-	_ = indexes
-	_ = amounts
-	if err == nil { //&& len(amounts) > 0 && len(indexes) > 0{
-		log.Debugf("Successfully proved transaction %s len(payids)",tx_hex, len(payids))
-		info.Proof_index = int64(indexes[0])
-		info.Proof_address =  daddress
-		info.Proof_amount = globals.FormatMoney12(amounts[0])
-		if len(payids) >=1 {
-			info.Proof_PayID8 = fmt.Sprintf("%x", payids[0]) // decrypted payment ID
+		// there may be more than 1 amounts, only first one is shown
+		indexes, amounts, payids, err := proof.Prove(tx_secret_key, daddress, info.Hex)
+
+		_ = indexes
+		_ = amounts
+		if err == nil { //&& len(amounts) > 0 && len(indexes) > 0{
+			log.Debugf("Successfully proved transaction %s len(payids)", tx_hex, len(payids))
+			info.Proof_index = int64(indexes[0])
+			info.Proof_address = daddress
+			info.Proof_amount = globals.FormatMoney12(amounts[0])
+			if len(payids) >= 1 {
+				info.Proof_PayID8 = fmt.Sprintf("%x", payids[0]) // decrypted payment ID
+			}
+		} else {
+			log.Debugf("err while proving %s", err)
+			if err != nil {
+				info.Proof_error = err.Error()
+			}
+
 		}
-	}else{
-		log.Debugf("err while proving %s",err)
-		if err != nil {
-		info.Proof_error = err.Error()
 	}
-
-	}
-}
-
-
-
 
 	// execute template now
 	data := map[string]interface{}{}
@@ -671,8 +665,8 @@ func show_page(w http.ResponseWriter, page int) {
 	data["median_block_size"] = fmt.Sprintf("%.02f", float32(info.Median_Block_Size)/1024)
 	data["total_supply"] = info.Total_Supply
 
-	if page == 0  { // use requested invalid page, give current page
-		page = int(info.TopoHeight)/10
+	if page == 0 { // use requested invalid page, give current page
+		page = int(info.TopoHeight) / 10
 	}
 
 	data["previous_page"] = page - 1
@@ -680,12 +674,11 @@ func show_page(w http.ResponseWriter, page int) {
 		data["previous_page"] = 1
 	}
 	data["current_page"] = page
-	if (int(info.TopoHeight) % 10)  == 0 {
-		data["total_page"] = (int(info.TopoHeight) / 10)  
-	}else{
-		data["total_page"] = (int(info.TopoHeight) / 10)  
+	if (int(info.TopoHeight) % 10) == 0 {
+		data["total_page"] = (int(info.TopoHeight) / 10)
+	} else {
+		data["total_page"] = (int(info.TopoHeight) / 10)
 	}
-	
 
 	data["next_page"] = page + 1
 	if (page + 1) > data["total_page"].(int) {
@@ -694,17 +687,16 @@ func show_page(w http.ResponseWriter, page int) {
 
 	fill_tx_pool_info(data, 25)
 
-	if page == 1{ // page 1 has 11 blocks, it does not show genesis block
+	if page == 1 { // page 1 has 11 blocks, it does not show genesis block
 		data["block_array"] = fill_tx_structure(int(page*10), 12)
-		}else{
-			if int(info.TopoHeight)-int(page*10) > 10{
-				data["block_array"] = fill_tx_structure(int(page*10), 10)	
-			}else{
-				data["block_array"] = fill_tx_structure(int(info.TopoHeight), int(info.TopoHeight)-int(page*10))	
-			}
-			
+	} else {
+		if int(info.TopoHeight)-int(page*10) > 10 {
+			data["block_array"] = fill_tx_structure(int(page*10), 10)
+		} else {
+			data["block_array"] = fill_tx_structure(int(info.TopoHeight), int(info.TopoHeight)-int(page*10))
 		}
-	
+
+	}
 
 	err = t.ExecuteTemplate(w, "main", data)
 	if err != nil {
@@ -793,8 +785,6 @@ func search_handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
-
 	// Query()["key"] will return an array of items,
 	// we only want the single item.
 	value := strings.TrimSpace(values[0])
@@ -810,75 +800,73 @@ func search_handler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(value) != 64 {
-		if s, err := strconv.ParseInt(value, 10, 64); err == nil && s >= 0 && s <= info.TopoHeight{
-					good = true
-				}
-	}else{ // check whether the string can be hex decoded
+		if s, err := strconv.ParseInt(value, 10, 64); err == nil && s >= 0 && s <= info.TopoHeight {
+			good = true
+		}
+	} else { // check whether the string can be hex decoded
 		t, err := hex.DecodeString(value)
-		if err != nil || len(t) != 32{
+		if err != nil || len(t) != 32 {
 
-			}else{
-				good = true
-			}
+		} else {
+			good = true
+		}
 	}
-
 
 	// value should be either 64 hex chars or a topoheight which should be less than current topoheight
 
-if good{
-	// check whether the page is block or tx or height
-	var blinfo block_info
-	var tx txinfo
-	err := load_block_from_rpc(&blinfo, value, false)
-	if err == nil {
-		log.Debugf("Redirecting user to block page")
-		http.Redirect(w, r, "/block/"+value, 302)
-		return
-	}
+	if good {
+		// check whether the page is block or tx or height
+		var blinfo block_info
+		var tx txinfo
+		err := load_block_from_rpc(&blinfo, value, false)
+		if err == nil {
+			log.Debugf("Redirecting user to block page")
+			http.Redirect(w, r, "/block/"+value, 302)
+			return
+		}
 
-	err = load_tx_from_rpc(&tx, value) //TODO handle error
-	if err == nil {
-		log.Debugf("Redirecting user to tx page")
-		http.Redirect(w, r, "/tx/"+value, 302)
+		err = load_tx_from_rpc(&tx, value) //TODO handle error
+		if err == nil {
+			log.Debugf("Redirecting user to tx page")
+			http.Redirect(w, r, "/tx/"+value, 302)
 
-		return
+			return
+		}
 	}
-}
 
 	{ // show error page
 		data := map[string]interface{}{}
-	var info structures.GetInfo_Result
+		var info structures.GetInfo_Result
 
-	data["title"] = "DERO Atlantis BlockChain Explorer(v1)"
-	data["servertime"] = time.Now().UTC().Format("2006-01-02 15:04:05")
+		data["title"] = "DERO Atlantis BlockChain Explorer(v1)"
+		data["servertime"] = time.Now().UTC().Format("2006-01-02 15:04:05")
 
-	t, err := template.New("foo").Parse(header_template + txpool_template + main_template + paging_template + footer_template + txpool_page_template + notfound_page_template)
+		t, err := template.New("foo").Parse(header_template + txpool_template + main_template + paging_template + footer_template + txpool_page_template + notfound_page_template)
 
-	// collect all the data afresh
-	// execute rpc to service
-	
+		// collect all the data afresh
+		// execute rpc to service
 
-	err = response.GetObject(&info)
-	if err != nil {
-		goto exit_error
-	}
+		err = response.GetObject(&info)
+		if err != nil {
+			goto exit_error
+		}
 
-	//fmt.Printf("get info %+v", info)
+		//fmt.Printf("get info %+v", info)
 
-	data["Network_Difficulty"] = info.Difficulty
-	data["hash_rate"] = fmt.Sprintf("%.03f", float32(info.Difficulty/1000000)/float32(info.Target))
-	data["txpool_size"] = info.Tx_pool_size
-	data["testnet"] = info.Testnet
-	data["fee_per_kb"] = float64(info.Dynamic_fee_per_kb) / 1000000000000
-	data["median_block_size"] = fmt.Sprintf("%.02f", float32(info.Median_Block_Size)/1024)
-	data["total_supply"] = info.Total_Supply
-	data["averageblocktime50"] = info.AverageBlockTime50
+		data["Network_Difficulty"] = info.Difficulty
+		data["hash_rate"] = fmt.Sprintf("%.03f", float32(info.Difficulty/1000000)/float32(info.Target))
+		data["txpool_size"] = info.Tx_pool_size
+		data["testnet"] = info.Testnet
+		data["fee_per_kb"] = float64(info.Dynamic_fee_per_kb) / 1000000000000
+		data["median_block_size"] = fmt.Sprintf("%.02f", float32(info.Median_Block_Size)/1024)
+		data["total_supply"] = info.Total_Supply
+		data["averageblocktime50"] = info.AverageBlockTime50
 
-	err = t.ExecuteTemplate(w, "notfound_page", data)
-	if err == nil {
-		return
+		err = t.ExecuteTemplate(w, "notfound_page", data)
+		if err == nil {
+			return
 
-	}
+		}
 
 	}
 exit_error:

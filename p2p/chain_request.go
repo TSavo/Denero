@@ -115,7 +115,7 @@ func (connection *Connection) Handle_ChainRequest(buf []byte) {
 
 	// we must give user our version of the chain
 	start_height := int64(0)
-        start_topoheight := int64(0)
+	start_topoheight := int64(0)
 
 	for i := 0; i < len(request.Block_list); i++ { // find the common point in our chain ( the block is NOT orphan)
 
@@ -124,7 +124,7 @@ func (connection *Connection) Handle_ChainRequest(buf []byte) {
 		if chain.Block_Exists(nil, request.Block_list[i]) && chain.Is_Block_Topological_order(nil, request.Block_list[i]) &&
 			request.TopoHeights[i] == chain.Load_Block_Topological_order(nil, request.Block_list[i]) {
 			start_height = chain.Load_Height_for_BL_ID(nil, request.Block_list[i])
-                        start_topoheight =  chain.Load_Block_Topological_order(nil, request.Block_list[i])
+			start_topoheight = chain.Load_Block_Topological_order(nil, request.Block_list[i])
 			rlog.Tracef(2, "Found common point in chain at hash %x height %d topoheight %d\n", request.Block_list[i], start_height, start_topoheight)
 			break
 		}

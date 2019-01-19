@@ -189,50 +189,48 @@ func (chain *Blockchain) Verify_Transaction_NonCoinbase(dbtx storage.DBTX, hf_ve
 	}
 
 	// Vout should have amount 0
-	
+
 	if hf_version <= 3 { // pre SC check
-            for i := 0; i < len(tx.Vout); i++ {
-		if tx.Vout[i].Amount != 0 {
-			logger.WithFields(log.Fields{"txid": tx_hash, "Amount": tx.Vout[i].Amount}).Warnf("Amount must be zero in ringCT world")
-			return false
+		for i := 0; i < len(tx.Vout); i++ {
+			if tx.Vout[i].Amount != 0 {
+				logger.WithFields(log.Fields{"txid": tx_hash, "Amount": tx.Vout[i].Amount}).Warnf("Amount must be zero in ringCT world")
+				return false
+			}
+		}
+	} else {
+		for i := 0; i < len(tx.Vout); i++ {
+			var zero crypto.Key
+			if tx.Vout[i].Amount != 0 {
+				// allow SC amounts to be open but make sure ring sigs still protect the open amount
+				if tx.Vout[i].Target.(transaction.Txout_to_key).Key == zero {
+					var V, sv crypto.Key
+
+					sv[0] = byte(tx.Vout[i].Amount & 255)
+					sv[1] = byte((tx.Vout[i].Amount >> 8) & 255)
+					sv[2] = byte((tx.Vout[i].Amount >> 16) & 255)
+					sv[3] = byte((tx.Vout[i].Amount >> 24) & 255)
+					sv[4] = byte((tx.Vout[i].Amount >> 32) & 255)
+					sv[5] = byte((tx.Vout[i].Amount >> 40) & 255)
+					sv[6] = byte((tx.Vout[i].Amount >> 48) & 255)
+					sv[7] = byte((tx.Vout[i].Amount >> 56) & 255)
+					crypto.AddKeys2(&V, &tx.RctSignature.ECdhInfo[i].Mask, &sv, &crypto.H)
+
+					if sv != tx.RctSignature.ECdhInfo[i].Amount {
+						logger.WithFields(log.Fields{"txid": tx_hash, "Amount": tx.Vout[i].Amount}).Warnf("Tampered amount  in ringCT world")
+						return false
+					}
+
+					if V != tx.RctSignature.OutPk[i].Mask {
+						logger.WithFields(log.Fields{"txid": tx_hash, "Amount": tx.Vout[i].Amount}).Warnf("Tampered amount2  in ringCT world")
+						return false
+					}
+				} else {
+					logger.WithFields(log.Fields{"txid": tx_hash, "Amount": tx.Vout[i].Amount}).Warnf("Amount must be zero in ringCT world")
+					return false
+				}
+			}
 		}
 	}
-        }else{
-	for i := 0; i < len(tx.Vout); i++ {
-            var zero crypto.Key
-		if tx.Vout[i].Amount != 0  {
-                       // allow SC amounts to be open but make sure ring sigs still protect the open amount
-                      if  tx.Vout[i].Target.(transaction.Txout_to_key).Key == zero { 
-                          var V,sv crypto.Key
-                        
-                        sv[0] = byte(tx.Vout[i].Amount & 255)
-                        sv[1] = byte((tx.Vout[i].Amount >> 8) & 255)
-                        sv[2] = byte((tx.Vout[i].Amount >> 16) & 255)
-                        sv[3] = byte((tx.Vout[i].Amount >> 24) & 255)
-                        sv[4] = byte((tx.Vout[i].Amount >> 32) & 255)
-                        sv[5] = byte((tx.Vout[i].Amount >> 40) & 255)
-                        sv[6] = byte((tx.Vout[i].Amount >> 48) & 255)
-                        sv[7] = byte((tx.Vout[i].Amount >> 56) & 255)
-                        crypto.AddKeys2(&V, &tx.RctSignature.ECdhInfo[i].Mask, &sv, &crypto.H)
-                        
-                        if sv != tx.RctSignature.ECdhInfo[i].Amount {
-                            logger.WithFields(log.Fields{"txid": tx_hash, "Amount": tx.Vout[i].Amount}).Warnf("Tampered amount  in ringCT world")
-                            return false
-                        }
-                        
-                        if V != tx.RctSignature.OutPk[i].Mask {
-                            logger.WithFields(log.Fields{"txid": tx_hash, "Amount": tx.Vout[i].Amount}).Warnf("Tampered amount2  in ringCT world")
-                            return false
-                        }
-                      }else{
-			logger.WithFields(log.Fields{"txid": tx_hash, "Amount": tx.Vout[i].Amount}).Warnf("Amount must be zero in ringCT world")
-			return false
-                     }
-                }
-	}
-        } 
-            
-
 
 	// check the mixin , it should be atleast 4 and should be same through out the tx ( all other inputs)
 	// someone did send a mixin of 3 in 12006 block height

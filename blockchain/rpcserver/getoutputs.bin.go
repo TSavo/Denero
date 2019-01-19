@@ -31,8 +31,7 @@ func getoutputs(rw http.ResponseWriter, req *http.Request) {
 	start := int64(0)
 	stop := int64(0)
 	start_height := int64(0)
-        stop_height := int64(0)
-       
+	stop_height := int64(0)
 
 	{ // parse start query parameter
 		keys, ok := req.URL.Query()["startheight"]
@@ -58,12 +57,12 @@ func getoutputs(rw http.ResponseWriter, req *http.Request) {
 				}
 
 			}
-			
+
 			stop_height = start_height + 5000
-			
-			if stop_height > int64(chain.Load_TOPO_HEIGHT(nil)){
-                            stop_height = int64(chain.Load_TOPO_HEIGHT(nil))
-                        }
+
+			if stop_height > int64(chain.Load_TOPO_HEIGHT(nil)) {
+				stop_height = int64(chain.Load_TOPO_HEIGHT(nil))
+			}
 		}
 	}
 
@@ -100,7 +99,6 @@ func getoutputs(rw http.ResponseWriter, req *http.Request) {
 	//biggest_output_index := chain.Block_Count_Vout(nil,top_id) + chain.Get_Block_Output_Index(nil,top_id)
 
 	biggest_output_index := int64(0)
-        
 
 	// convert height to block
 	top_block, err := chain.Load_Block_Topological_order_at_index(nil, chain.Load_TOPO_HEIGHT(nil))
@@ -109,14 +107,13 @@ func getoutputs(rw http.ResponseWriter, req *http.Request) {
 		_, biggest_output_index = chain.Get_Block_Output_Index(nil, top_block)
 
 	}
-	
+
 	if stop_height != 0 {
-            top_block, err := chain.Load_Block_Topological_order_at_index(nil,stop_height)
-            if err == nil {
-		_, biggest_output_index = chain.Get_Block_Output_Index(nil, top_block)
-            }
-        }
-	
+		top_block, err := chain.Load_Block_Topological_order_at_index(nil, stop_height)
+		if err == nil {
+			_, biggest_output_index = chain.Get_Block_Output_Index(nil, top_block)
+		}
+	}
 
 	if stop == 0 || stop > biggest_output_index {
 		stop = biggest_output_index
@@ -126,7 +123,7 @@ func getoutputs(rw http.ResponseWriter, req *http.Request) {
 	if start >= stop {
 		start = stop - 1
 	}
-	
+
 	//   lz4writer := lz4.NewWriter(rw)
 	//lz4writer.HighCompression = true // enable extreme but slow compression
 	//lz4writer.BlockMaxSize = 256*1024 // small block size to decrease memory consumption

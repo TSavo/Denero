@@ -161,7 +161,7 @@ func handle_easymenu_post_open_command(l *readline.Instance, line string) (proce
 		addr_list := []address.Address{*a}
 		amount_list := []uint64{amount_to_transfer} // transfer 50 dero, 2 dero
 		fees_per_kb := uint64(0)                    // fees  must be calculated by walletapi
-		tx, inputs, input_sum, change, err := wallet.Transfer(addr_list, amount_list, 0, hex.EncodeToString(payment_id), fees_per_kb, 0,nil)
+		tx, inputs, input_sum, change, err := wallet.Transfer(addr_list, amount_list, 0, hex.EncodeToString(payment_id), fees_per_kb, 0, nil)
 		_ = inputs
 		if err != nil {
 			globals.Logger.Warnf("Error while building Transaction err %s\n", err)

@@ -141,18 +141,18 @@ func vector_exponent_custom(A []crypto.Key, B []crypto.Key, a []crypto.Key, b []
 }
 
 // Given a scalar, construct a vector of powers
-// NOTE: the below function has bug where the function will panic  if n  == 0 or n == 1 
+// NOTE: the below function has bug where the function will panic  if n  == 0 or n == 1
 // However, the code has hardcoded number n = 64, so this is not exploitable as such in current form
 func vector_powers(x crypto.Key, n int64) (res []crypto.Key) {
-        
-        if n < 2 {
-            panic("vector powers only support 64 bit inputs/outputs")
-        }
-        
+
+	if n < 2 {
+		panic("vector powers only support 64 bit inputs/outputs")
+	}
+
 	res = make([]crypto.Key, n, n)
-        res[0] = crypto.Identity  // first 2 are setup manually
+	res[0] = crypto.Identity // first 2 are setup manually
 	res[1] = x
-	
+
 	for i := int64(2); i < n; i++ {
 		crypto.ScMul(&res[i], &res[i-1], &x)
 
@@ -615,98 +615,95 @@ func BULLETPROOF_Prove_Amount(v uint64, gamma *crypto.Key) *BulletProof {
 	return BULLETPROOF_Prove(&sv, gamma)
 }
 
+func (proof *BulletProof) BULLETPROOF_BasicChecks() (result bool) {
 
-func (proof *BulletProof)BULLETPROOF_BasicChecks() (result bool){
-   
-    // check whether any of the values in the proof are not 0 or 1 
-	if proof.V[0] == crypto.Zero  ||
-           proof.A ==  crypto.Zero || 
-           proof.S ==  crypto.Zero || 
-            proof.T1 ==  crypto.Zero || 
-             proof.T2 ==  crypto.Zero || 
-              proof.taux ==  crypto.Zero || 
-               proof.mu ==  crypto.Zero || 
-                  proof.a ==  crypto.Zero || 
-                   proof.b ==  crypto.Zero ||
-                    proof.t ==  crypto.Zero{
-                       return false
-                   }
-        for  i := range proof.L {
-            if  proof.L[i] ==  crypto.Zero ||  proof.R[i] ==  crypto.Zero{
-                return false
-            }
-        }
-                   
-	if proof.V[0] == crypto.Identity  ||
-           proof.A ==  crypto.Identity || 
-           proof.S ==  crypto.Identity || 
-            proof.T1 ==  crypto.Identity || 
-             proof.T2 ==  crypto.Identity || 
-              proof.taux ==  crypto.Identity || 
-               proof.mu ==  crypto.Identity || 
-                  proof.a ==  crypto.Identity || 
-                   proof.b ==  crypto.Identity ||
-                    proof.t ==  crypto.Identity{
-                       return false
-                   }
+	// check whether any of the values in the proof are not 0 or 1
+	if proof.V[0] == crypto.Zero ||
+		proof.A == crypto.Zero ||
+		proof.S == crypto.Zero ||
+		proof.T1 == crypto.Zero ||
+		proof.T2 == crypto.Zero ||
+		proof.taux == crypto.Zero ||
+		proof.mu == crypto.Zero ||
+		proof.a == crypto.Zero ||
+		proof.b == crypto.Zero ||
+		proof.t == crypto.Zero {
+		return false
+	}
+	for i := range proof.L {
+		if proof.L[i] == crypto.Zero || proof.R[i] == crypto.Zero {
+			return false
+		}
+	}
 
-        for  i := range proof.L {
-            if  proof.L[i] ==  crypto.Identity ||  proof.R[i] ==  crypto.Identity{
-                return false
-            }
-        }                   
-	
-	
-	// time to verify that cofactors cannnot be exploited 
+	if proof.V[0] == crypto.Identity ||
+		proof.A == crypto.Identity ||
+		proof.S == crypto.Identity ||
+		proof.T1 == crypto.Identity ||
+		proof.T2 == crypto.Identity ||
+		proof.taux == crypto.Identity ||
+		proof.mu == crypto.Identity ||
+		proof.a == crypto.Identity ||
+		proof.b == crypto.Identity ||
+		proof.t == crypto.Identity {
+		return false
+	}
+
+	for i := range proof.L {
+		if proof.L[i] == crypto.Identity || proof.R[i] == crypto.Identity {
+			return false
+		}
+	}
+
+	// time to verify that cofactors cannnot be exploited
 	curve_order := crypto.CurveOrder()
 	if *crypto.ScalarMultKey(&proof.V[0], &curve_order) != crypto.Identity {
-            return false
-        }
-        
+		return false
+	}
+
 	if *crypto.ScalarMultKey(&proof.A, &curve_order) != crypto.Identity {
-            return false
-        }	
+		return false
+	}
 	if *crypto.ScalarMultKey(&proof.S, &curve_order) != crypto.Identity {
-            return false
-        }
+		return false
+	}
 	if *crypto.ScalarMultKey(&proof.T1, &curve_order) != crypto.Identity {
-            return false
-        }
+		return false
+	}
 	if *crypto.ScalarMultKey(&proof.T2, &curve_order) != crypto.Identity {
-            return false
-        }
-        /* 
-	if *crypto.ScalarMultKey(&proof.taux, &curve_order) != crypto.Identity {
-            return false
-        }
-	if *crypto.ScalarMultKey(&proof.mu, &curve_order) != crypto.Identity {
-            return false
-        }
-        */
-         for  i := range proof.L {
-            if *crypto.ScalarMultKey(&proof.L[i], &curve_order) != crypto.Identity {
-                return false
-            }
-            if *crypto.ScalarMultKey(&proof.R[i], &curve_order) != crypto.Identity {
-            return false
-        }
-        } 
-        
+		return false
+	}
+	/*
+		if *crypto.ScalarMultKey(&proof.taux, &curve_order) != crypto.Identity {
+	            return false
+	        }
+		if *crypto.ScalarMultKey(&proof.mu, &curve_order) != crypto.Identity {
+	            return false
+	        }
+	*/
+	for i := range proof.L {
+		if *crypto.ScalarMultKey(&proof.L[i], &curve_order) != crypto.Identity {
+			return false
+		}
+		if *crypto.ScalarMultKey(&proof.R[i], &curve_order) != crypto.Identity {
+			return false
+		}
+	}
 
-/*	
-        if *crypto.ScalarMultKey(&proof.a, &curve_order) != crypto.Identity {
-            return false
-        }
-	if *crypto.ScalarMultKey(&proof.b, &curve_order) != crypto.Identity {
-            return false
-        }
+	/*
+	           if *crypto.ScalarMultKey(&proof.a, &curve_order) != crypto.Identity {
+	               return false
+	           }
+	   	if *crypto.ScalarMultKey(&proof.b, &curve_order) != crypto.Identity {
+	               return false
+	           }
 
-	if *crypto.ScalarMultKey(&proof.t, &curve_order) != crypto.Identity {
-            return false
-        }
-*/
+	   	if *crypto.ScalarMultKey(&proof.t, &curve_order) != crypto.Identity {
+	               return false
+	           }
+	*/
 
-   return true 
+	return true
 }
 
 func (proof *BulletProof) BULLETPROOF_Verify() (result bool) {
@@ -735,15 +732,12 @@ func (proof *BulletProof) BULLETPROOF_Verify() (result bool) {
 		//Proof is not for 64 bits
 		return false
 	}
-	
-	
+
 	// these checks try to filter out rogue inputs
-	if proof.BULLETPROOF_BasicChecks() == false{
-            return false
-        }
-    
-        
-		
+	if proof.BULLETPROOF_BasicChecks() == false {
+		return false
+	}
+
 	logN := len(proof.L)
 	N := int(1 << uint(logN))
 

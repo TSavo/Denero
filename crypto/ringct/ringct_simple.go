@@ -202,8 +202,13 @@ func (r *RctSig) Gen_RingCT_Simple_BulletProof(Message crypto.Hash, inputs []Inp
 
 		// create tuple and encrypt it, then add it the signature
 		tuple := ECdhTuple{Mask: secret_mask, Amount: *d2h(outputs[i].Amount)}
-		ecdhEncode(&tuple, outputs[i].Scalar_Key)
+		var zero crypto.Key
 
+		if outputs[i].Public_View_Key == zero && outputs[i].Public_Spend_Key == zero {
+			// NOTE: we do NOT encrypt secret_mask and amount, if the amount it go to SC_TX
+		}else{
+			ecdhEncode(&tuple, outputs[i].Scalar_Key)
+		}
 		r.ECdhInfo = append(r.ECdhInfo, tuple) // add encrypted tuple to signature
 	}
 

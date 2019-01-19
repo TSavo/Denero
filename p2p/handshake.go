@@ -95,14 +95,13 @@ func (connection *Connection) Handle_Handshake(buf []byte) {
 	}
 
 	rlog.Tracef(2, "handshake response received %+v  %s", handshake, globals.CTXString(connection.logger))
-        
-        // check if self connection exit
-        if connection.Incoming && handshake.Peer_ID == GetPeerID(){
-            rlog.Tracef(1,"Same peer ID, probably self connection, disconnecting from this client")
-            connection.Exit()
-            return
-        }
-        
+
+	// check if self connection exit
+	if connection.Incoming && handshake.Peer_ID == GetPeerID() {
+		rlog.Tracef(1, "Same peer ID, probably self connection, disconnecting from this client")
+		connection.Exit()
+		return
+	}
 
 	if handshake.Request {
 		connection.Send_Handshake(false) // send it as response
@@ -134,10 +133,10 @@ func (connection *Connection) Handle_Handshake(buf []byte) {
 
 			var p Peer
 			if connection.Addr.IP.To4() != nil { // if ipv4
-                            p.Address = fmt.Sprintf("%s:%d", connection.Addr.IP.String(), connection.Port)
-                        }else{ // if ipv6
-                            p.Address = fmt.Sprintf("[%s]:%d", connection.Addr.IP.String(), connection.Port)
-                        }
+				p.Address = fmt.Sprintf("%s:%d", connection.Addr.IP.String(), connection.Port)
+			} else { // if ipv6
+				p.Address = fmt.Sprintf("[%s]:%d", connection.Addr.IP.String(), connection.Port)
+			}
 			p.ID = connection.Peer_ID
 
 			p.LastConnected = 0 // uint64(time.Now().UTC().Unix())

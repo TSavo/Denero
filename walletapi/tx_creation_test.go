@@ -130,7 +130,7 @@ func Test_Creation_TX(t *testing.T) {
 			bulletproof = true
 		}
 
-		tx := w.Create_TX_v2(ins, outs, 0, 0, payment_id, bulletproof,nil)
+		tx := w.Create_TX_v2(ins, outs, 0, 0, payment_id, bulletproof, nil)
 
 		if !tx.RctSignature.Verify() {
 			t.Fatalf("TX ring signature verification failed")
@@ -262,7 +262,7 @@ func Test_Creation_TX_Size(t *testing.T) {
 
 			bulletproof := true
 
-			tx := w.Create_TX_v2(ins, outs, 0, 0, payment_id, bulletproof,nil)
+			tx := w.Create_TX_v2(ins, outs, 0, 0, payment_id, bulletproof, nil)
 
 			if !tx.RctSignature.Verify() {
 				t.Fatalf("TX ring signature verification failed")
@@ -452,7 +452,7 @@ func benchmark_TX_Verification(b *testing.B, num_inputs uint32, num_outputs uint
 
 	bulletproof := true
 
-	tx = w.Create_TX_v2(ins, outs, 0, 0, payment_id, bulletproof,nil)
+	tx = w.Create_TX_v2(ins, outs, 0, 0, payment_id, bulletproof, nil)
 
 	return tx
 
@@ -536,8 +536,6 @@ func Benchmark_TX_Verification_inputs_10_outputs_2_mixin_8(b *testing.B){
 }
 */
 
-
-
 // this will test that the keys are placed properly and thus can be decoded by recievers
 func Test_Creation_SCTX(t *testing.T) {
 
@@ -575,10 +573,9 @@ func Test_Creation_SCTX(t *testing.T) {
 			random_inputs = 500
 			random_outputs = 2
 		}
-		
-		random_inputs = 5
-                random_outputs = 1
 
+		random_inputs = 5
+		random_outputs = 1
 
 		txw := TX_Wallet_Data{WAmount: 4000000000000}
 		txw.TXdata.Index_Global = 739
@@ -633,16 +630,15 @@ func Test_Creation_SCTX(t *testing.T) {
 		}
 
 		bulletproof := true
-		
 
 		var sctx transaction.SC_Transaction
-		
-		tx := w.Create_TX_v2(ins, outs, 0, 0, payment_id, bulletproof,&sctx)
 
-                if !tx.Verify_SC_Signature() {
+		tx := w.Create_TX_v2(ins, outs, 0, 0, payment_id, bulletproof, &sctx)
+
+		if !tx.Verify_SC_Signature() {
 			t.Fatalf("TX SC  signature verification failed")
 		}
-		
+
 		if !tx.RctSignature.Verify() {
 			t.Fatalf("TX ring signature verification failed")
 		}
@@ -685,4 +681,3 @@ func Test_Creation_SCTX(t *testing.T) {
 	}
 
 }
-

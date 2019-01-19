@@ -30,9 +30,9 @@ package checkpoints
 //go:generate sh -c "echo // please read checkpoints.go comments > mainnet_checksums.go"
 //go:generate sh -c "echo package checkpoints >> mainnet_checksums.go"
 //go:generate sh -c "echo  >> mainnet_checksums.go"
-//go:generate sh -c "echo var mainnet_checksums_base64 = \\\x60 >> mainnet_checksums.go" 
+//go:generate sh -c "echo var mainnet_checksums_base64 = \\\x60 >> mainnet_checksums.go"
 //go:generate sh -c "base64 -w 80 <  mainnet_checksums.dat >> mainnet_checksums.go"
-//go:generate sh -c "echo  \\\x60 >> mainnet_checksums.go" 
+//go:generate sh -c "echo  \\\x60 >> mainnet_checksums.go"
 
 import "fmt"
 
@@ -72,14 +72,14 @@ var mainnet_checksums = load_base64(mainnet_checksums_base64)
 var testnet_checksums = load_base64(testnet_checksums_base64)
 
 func load_base64(input string) []byte {
-    
-    data, err := base64.StdEncoding.DecodeString(input)
-    if err != nil {
-        rlog.Tracef(1, "Loaded checksums failed base64 decoding input length %d", len(input))
-    }
-    
-    return data
-    
+
+	data, err := base64.StdEncoding.DecodeString(input)
+	if err != nil {
+		rlog.Tracef(1, "Loaded checksums failed base64 decoding input length %d", len(input))
+	}
+
+	return data
+
 }
 
 // load checkpoints from the data directory

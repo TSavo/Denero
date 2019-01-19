@@ -35,14 +35,14 @@ import "github.com/vmihailenco/msgpack"
 
 func (chain *Blockchain) Process_SC(dbtx storage.DBTX, bl *block.Block, tx *transaction.Transaction, hard_fork_version_current int64) {
 
-         defer func() {
+	defer func() {
 		// safety so if anything wrong happens, verification fails
 		if r := recover(); r != nil {
 			logger.Warnf("Recovered while rewinding chain, Stack trace below block_hash ")
 			logger.Warnf("Stack trace  \n%s", debug.Stack())
 		}
 	}()
-        
+
 	var err error
 	if !tx.Verify_SC_Signature() { // if tx is not SC TX, or Signature could not be verified skip it
 		return

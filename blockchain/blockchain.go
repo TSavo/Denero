@@ -169,7 +169,7 @@ func Blockchain_Start(params map[string]interface{}) (*Blockchain, error) {
 		}
 
 		// check if user is trying to load previous testnet DB with , reject
-		if !globals.IsMainnet() && chain.Block_Exists(nil,crypto.HashHexToHash("4dfc6daa5e104250125e0a14b74eca04730fd5bec4e826fa54f791245aa924f2")) { 
+		if !globals.IsMainnet() && chain.Block_Exists(nil, crypto.HashHexToHash("4dfc6daa5e104250125e0a14b74eca04730fd5bec4e826fa54f791245aa924f2")) {
 			logger.Warnf("Please delete existing testnet DB as testnet has boostrapped")
 			return nil, fmt.Errorf("Please delete existing testnet DB.")
 		}
@@ -211,12 +211,11 @@ func Blockchain_Start(params map[string]interface{}) (*Blockchain, error) {
 
 		// store total generated coins
 		// this is hardcoded at initial chain import, keeping original emission schedule
-		if globals.IsMainnet(){
-				dbtx.StoreUint64(BLOCKCHAIN_UNIVERSE, GALAXY_BLOCK, bl_current_hash[:], PLANET_ALREADY_GENERATED_COINS, config.MAINNET_HARDFORK_1_TOTAL_SUPPLY)		
-			}else{
-				dbtx.StoreUint64(BLOCKCHAIN_UNIVERSE, GALAXY_BLOCK, bl_current_hash[:], PLANET_ALREADY_GENERATED_COINS, config.TESTNET_HARDFORK_1_TOTAL_SUPPLY)		
-			}
-		
+		if globals.IsMainnet() {
+			dbtx.StoreUint64(BLOCKCHAIN_UNIVERSE, GALAXY_BLOCK, bl_current_hash[:], PLANET_ALREADY_GENERATED_COINS, config.MAINNET_HARDFORK_1_TOTAL_SUPPLY)
+		} else {
+			dbtx.StoreUint64(BLOCKCHAIN_UNIVERSE, GALAXY_BLOCK, bl_current_hash[:], PLANET_ALREADY_GENERATED_COINS, config.TESTNET_HARDFORK_1_TOTAL_SUPPLY)
+		}
 
 		chain.Store_Block_Topological_order(dbtx, bl.GetHash(), 0) // genesis block is the lowest
 		chain.Store_TOPO_HEIGHT(dbtx, 0)                           //
@@ -483,7 +482,7 @@ func (chain *Blockchain) Add_TX_To_Pool(tx *transaction.Transaction) (result boo
 
 	// chain lock is no longer required as we only do readonly processing
 	//	chain.Lock()
-	//	defer chain.Unlock()       
+	//	defer chain.Unlock()
 	dbtx, err := chain.store.BeginTX(false)
 	if err != nil {
 		logger.Warnf("Could NOT create DB transaction  err %s", err)
@@ -505,7 +504,7 @@ func (chain *Blockchain) Add_TX_To_Pool(tx *transaction.Transaction) (result boo
 
 	// quick check without calculating everything whether tx is in pool, if yes we do nothing
 	if chain.Mempool.Mempool_TX_Exist(txhash) {
-		rlog.Tracef(2,"TX %s rejected Already in MEMPOOL", txhash)
+		rlog.Tracef(2, "TX %s rejected Already in MEMPOOL", txhash)
 		return true
 	}
 
@@ -515,7 +514,7 @@ func (chain *Blockchain) Add_TX_To_Pool(tx *transaction.Transaction) (result boo
 	// a simple technique seems to be to do key image verification for double spend, if it's reject
 	// this test is placed to avoid ring signature verification cost for faulty tx as early as possible
 	if !chain.Verify_Transaction_NonCoinbase_DoubleSpend_Check(dbtx, tx) { // BUG BUG BUG we must use dbtx to confirm
-		rlog.Tracef(2,"TX %s rejected due to double spending", txhash)
+		rlog.Tracef(2, "TX %s rejected due to double spending", txhash)
 		return false
 	}
 
@@ -539,12 +538,12 @@ func (chain *Blockchain) Add_TX_To_Pool(tx *transaction.Transaction) (result boo
 
 	if chain.Verify_Transaction_NonCoinbase(dbtx, hf_version, tx) && chain.Verify_Transaction_NonCoinbase_DoubleSpend_Check(dbtx, tx) {
 		if chain.Mempool.Mempool_Add_TX(tx, 0) { // new tx come with 0 marker
-			rlog.Tracef(2,"Successfully added tx %s to pool", txhash)
+			rlog.Tracef(2, "Successfully added tx %s to pool", txhash)
 
 			mempool_tx_counter.Inc()
 			return true
 		} else {
-			rlog.Tracef(2,"TX %s rejected by pool", txhash)
+			rlog.Tracef(2, "TX %s rejected by pool", txhash)
 			return false
 		}
 	}
@@ -613,7 +612,6 @@ func (chain *Blockchain) SortTips(dbtx storage.DBTX, tips []crypto.Hash) (sorted
 	}
 	return
 }
-
 
 // side blocks are blocks which lost the race the to become part
 // of main chain, but there transactions are honoured,
@@ -760,8 +758,6 @@ func (chain *Blockchain) Add_Complete_Block(cbl *block.Complete_Block) (err erro
 			}
 		}
 	}
-
-	
 
 	block_height := chain.Calculate_Height_At_Tips(dbtx, bl.Tips)
 
@@ -1184,12 +1180,11 @@ skip_checks:
 
 				// store total generated coins
 				// this is hardcoded at initial chain import, keeping original emission schedule
-				if globals.IsMainnet(){
-						dbtx.StoreUint64(BLOCKCHAIN_UNIVERSE, GALAXY_BLOCK, bl_current_hash[:], PLANET_ALREADY_GENERATED_COINS, config.MAINNET_HARDFORK_1_TOTAL_SUPPLY)
-					}else{
-						dbtx.StoreUint64(BLOCKCHAIN_UNIVERSE, GALAXY_BLOCK, bl_current_hash[:], PLANET_ALREADY_GENERATED_COINS, config.TESTNET_HARDFORK_1_TOTAL_SUPPLY)
-					}
-				
+				if globals.IsMainnet() {
+					dbtx.StoreUint64(BLOCKCHAIN_UNIVERSE, GALAXY_BLOCK, bl_current_hash[:], PLANET_ALREADY_GENERATED_COINS, config.MAINNET_HARDFORK_1_TOTAL_SUPPLY)
+				} else {
+					dbtx.StoreUint64(BLOCKCHAIN_UNIVERSE, GALAXY_BLOCK, bl_current_hash[:], PLANET_ALREADY_GENERATED_COINS, config.TESTNET_HARDFORK_1_TOTAL_SUPPLY)
+				}
 
 			} else { //  hf 2 or later generate miner TX rewards as per client protocol
 
@@ -1198,18 +1193,18 @@ skip_checks:
 				base_reward := emission.GetBlockReward_Atlantis(hard_fork_version_current, past_coins_generated)
 
 				// base reward is only 90%, rest 10 % is pushed back
-				if globals.IsMainnet(){
+				if globals.IsMainnet() {
 					base_reward = (base_reward * 9) / 10
 				}
 
 				// lower reward for byzantine behaviour
 				// for as many block as added
 				if chain.isblock_SideBlock(dbtx, bl_current_hash, highest_topo) { // lost race (or byzantine behaviour)
-                                    if  hard_fork_version_current == 2 {
-					base_reward = (base_reward * 67) / 100 // give only 67 % reward
-                                    }else{
-                                        base_reward = (base_reward * 8) / 100 // give only 8 % reward
-                                    }
+					if hard_fork_version_current == 2 {
+						base_reward = (base_reward * 67) / 100 // give only 67 % reward
+					} else {
+						base_reward = (base_reward * 8) / 100 // give only 8 % reward
+					}
 				}
 
 				// logger.Infof("past coins generated %d base reward %d", past_coins_generated, base_reward)
@@ -1277,10 +1272,10 @@ skip_checks:
 
 		// do more cleanup of tips for byzantine behaviour
 		// this copy is necessary, otherwise data corruption occurs
-		tips = append([]crypto.Hash{},new_tips...) 
+		tips = append([]crypto.Hash{}, new_tips...)
 		new_tips = new_tips[:0]
 		best_tip := chain.find_best_tip_cumulative_difficulty(dbtx, tips)
-		
+
 		new_tips = append(new_tips, best_tip)
 		for i := range tips {
 			if best_tip != tips[i] {
@@ -1367,14 +1362,14 @@ func (chain *Blockchain) client_protocol(dbtx storage.DBTX, bl *block.Block, bli
 
 			//mark tx found in this block is valid
 			chain.mark_TX(dbtx, blid, bl.Tx_hashes[i], true)
-                        
-                        // execute SC TX if HF is active
-                        if bl.Major_Version >= 4{
-                            chain.Process_SC(dbtx,bl,tx,int64(bl.Major_Version) )
-                        }
+
+			// execute SC TX if HF is active
+			if bl.Major_Version >= 4 {
+				chain.Process_SC(dbtx, bl, tx, int64(bl.Major_Version))
+			}
 
 		} else { // TX is double spend or reincluded by 2 blocks simultaneously
-			rlog.Tracef(1,"Double spend TX is being ignored %s %s", blid, bl.Tx_hashes[i])
+			rlog.Tracef(1, "Double spend TX is being ignored %s %s", blid, bl.Tx_hashes[i])
 			chain.mark_TX(dbtx, blid, bl.Tx_hashes[i], false)
 		}
 	}
@@ -1399,11 +1394,10 @@ func (chain *Blockchain) client_protocol_reverse(dbtx storage.DBTX, bl *block.Bl
 
 			//mark tx found in this block is invalid
 			chain.mark_TX(dbtx, blid, bl.Tx_hashes[i], false)
-                        
-                        if bl.Major_Version >= 4{
-                            chain.Revert_SC(dbtx,crypto.Key(bl.Tx_hashes[i]),int64(bl.Major_Version) )
-                        }
-                        
+
+			if bl.Major_Version >= 4 {
+				chain.Revert_SC(dbtx, crypto.Key(bl.Tx_hashes[i]), int64(bl.Major_Version))
+			}
 
 		} else { // TX is double spend or reincluded by 2 blocks simultaneously
 			// invalid tx is related
@@ -1891,7 +1885,6 @@ func (chain *Blockchain) Rewind_Chain(rewind_count int) (result bool) {
 	return true
 }
 
-
 // build reachability graph upto 2*config deeps to answer reachability queries
 func (chain *Blockchain) buildReachability_internal(dbtx storage.DBTX, reachmap map[crypto.Hash]bool, blid crypto.Hash, level int) {
 	past := chain.Get_Block_Past(dbtx, blid)
@@ -2026,11 +2019,9 @@ func (chain *Blockchain) IsBlockSyncBlockHeight(dbtx storage.DBTX, blid crypto.H
 		panic("No block exists at this height, not possible")
 	}
 
-	
 	//   if len(blocks) == 1 { //  ideal blockchain case, it is a sync block
 	//       return true
 	//   }
-	
 
 	// check whether single block exists in the TOPO order index, if no we are NOT a sync block
 
@@ -2098,11 +2089,9 @@ func (chain *Blockchain) IsBlockSyncBlockHeightSpecific(dbtx storage.DBTX, blid 
 		panic("No block exists at this height, not possible")
 	}
 
-	
 	//   if len(blocks) == 1 { //  ideal blockchain case, it is a sync block
 	//       return true
 	//   }
-	
 
 	// check whether single block exists in the TOPO order index, if no we are NOT a sync block
 
@@ -2146,9 +2135,8 @@ func (chain *Blockchain) IsBlockSyncBlockHeightSpecific(dbtx storage.DBTX, blid 
 	return true
 }
 
-
 // key is string of blid and appendded chain height
-var tipbase_cache,_ = hashicorp_lru.New(10240)
+var tipbase_cache, _ = hashicorp_lru.New(10240)
 
 // base of a tip is last known sync point
 // weight of bases in mentioned in term of height
@@ -2156,16 +2144,15 @@ var tipbase_cache,_ = hashicorp_lru.New(10240)
 func (chain *Blockchain) FindTipBase(dbtx storage.DBTX, blid crypto.Hash, chain_height int64) (bs BlockScore) {
 
 	// see if cache contains it
-	if bsi,ok := tipbase_cache.Get(fmt.Sprintf("%s%d", blid,chain_height));ok{
+	if bsi, ok := tipbase_cache.Get(fmt.Sprintf("%s%d", blid, chain_height)); ok {
 		bs = bsi.(BlockScore)
 		return bs
 	}
 
-	defer func(){ // capture return value of bs to cache
+	defer func() { // capture return value of bs to cache
 		z := bs
-		tipbase_cache.Add(fmt.Sprintf("%s%d", blid,chain_height),z)
+		tipbase_cache.Add(fmt.Sprintf("%s%d", blid, chain_height), z)
 	}()
-
 
 	// if we are genesis return genesis block as base
 
@@ -2345,21 +2332,19 @@ func (chain *Blockchain) FindTipWorkScore(dbtx storage.DBTX, blid crypto.Hash, b
 // weight is replace by height
 func (chain *Blockchain) find_common_base(dbtx storage.DBTX, tips []crypto.Hash) (base crypto.Hash, base_height int64) {
 
-
 	scores := make([]BlockScore, len(tips), len(tips))
 
 	// var base crypto.Hash
 	var best_height int64
 	for i := range tips {
 		tip_height := chain.Load_Height_for_BL_ID(dbtx, tips[i])
-		if tip_height > best_height{
+		if tip_height > best_height {
 			best_height = tip_height
 		}
 	}
 
-
 	for i := range tips {
-		scores[i] = chain.FindTipBase(dbtx, tips[i],best_height) // we should chose the lowest weight
+		scores[i] = chain.FindTipBase(dbtx, tips[i], best_height) // we should chose the lowest weight
 		scores[i].Height = chain.Load_Height_for_BL_ID(dbtx, scores[i].BLID)
 	}
 	// base is the lowest height

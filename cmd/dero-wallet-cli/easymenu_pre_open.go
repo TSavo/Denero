@@ -37,7 +37,7 @@ func display_easymenu_pre_open_command(l *readline.Instance) {
 	io.WriteString(w, "\t\033[1m3\033[0m\tRecover Wallet using recovery seed (25 words)\n")
 	io.WriteString(w, "\t\033[1m4\033[0m\tRecover Wallet using recovery key (64 char private spend key hex)\n")
 	io.WriteString(w, "\t\033[1m5\033[0m\tCreate  Watch-able Wallet (view only) using wallet view key\n")
-        io.WriteString(w, "\t\033[1m6\033[0m\tRecover Non-deterministic Wallet key\n")
+	io.WriteString(w, "\t\033[1m6\033[0m\tRecover Non-deterministic Wallet key\n")
 
 	io.WriteString(w, "\n\t\033[1m9\033[0m\tExit menu and start prompt\n")
 	io.WriteString(w, "\t\033[1m0\033[0m\tExit Wallet\n")
@@ -168,14 +168,14 @@ func handle_easymenu_pre_open_command(l *readline.Instance, line string) {
 		} else {
 			wallet.SetOnlineMode()
 		}
-        case "6": // create non deterministic wallet // TODO user providing wrong key is not being validated, do it ASAP
+	case "6": // create non deterministic wallet // TODO user providing wrong key is not being validated, do it ASAP
 
 		filename := choose_file_name(l)
 		spend_key_string := read_line_with_prompt(l, "Please enter your Secret spend key ( hex 64 chars): ")
-                view_key_string := read_line_with_prompt(l, "Please enter your Secret view key ( hex 64 chars): ")
+		view_key_string := read_line_with_prompt(l, "Please enter your Secret view key ( hex 64 chars): ")
 
 		password := ReadConfirmedPassword(l, "Enter password", "Confirm password")
-		wallet, err = walletapi.Create_Encrypted_Wallet_NonDeterministic(filename, password, spend_key_string,view_key_string)
+		wallet, err = walletapi.Create_Encrypted_Wallet_NonDeterministic(filename, password, spend_key_string, view_key_string)
 
 		if err != nil {
 			globals.Logger.Warnf("Error while reconstructing view only wallet using view key err %s\n", err)

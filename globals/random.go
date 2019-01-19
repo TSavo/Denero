@@ -38,5 +38,4 @@ func (_ CryptoRandSource) Int63() int64 {
 
 func (_ CryptoRandSource) Seed(_ int64) {}
 
-
 var Global_Random = mathrand.New(NewCryptoRandSource())

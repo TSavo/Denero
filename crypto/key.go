@@ -407,10 +407,9 @@ func (kd *Key) KeyDerivation_To_PublicKey(outputIndex uint64, baseKey Key) Key {
 	return tmp
 }
 
-
 // generate ephermal keys  from a key derivation
 // base key is the B's public spend key or A's private spend key
-// outputIndex is the sub address index 
+// outputIndex is the sub address index
 // 0 is reserved for main account address
 // this function is same as above except for replacing geAdd with geSub
 func (kd *Key) KeyDerivation_To_SubAddress_PublicKey(outputIndex uint64, baseKey Key) Key {
@@ -433,20 +432,15 @@ func (kd *Key) KeyDerivation_To_SubAddress_PublicKey(outputIndex uint64, baseKey
 	return tmp
 }
 
-
-
-var public_spend_cache  ExtendedGroupElement
+var public_spend_cache ExtendedGroupElement
 var public_spend_cache_key Key
 
-
-func KeyDerivationandPublicKey(pub *Key, priv *Key, outputIndex uint64 , basekey Key) (Key) {
+func KeyDerivationandPublicKey(pub *Key, priv *Key, outputIndex uint64, basekey Key) Key {
 	var point ExtendedGroupElement
 	var point2 ProjectiveGroupElement
 	var point3 CompletedGroupElement
 	var derivation ExtendedGroupElement
 
-	
-	
 	tmp := *pub
 	if !point.FromBytes(&tmp) {
 		panic("Invalid public key.")
@@ -456,37 +450,37 @@ func KeyDerivationandPublicKey(pub *Key, priv *Key, outputIndex uint64 , basekey
 	GeScalarMult(&point2, &tmp, &point)
 	GeMul8(&point3, &point2)
 	point3.ToExtended(&derivation)
-        point3.ToProjective(&point2)
+	point3.ToProjective(&point2)
 
 	point2.ToBytes(&tmp)
-        
-        // key derivation derivation = kd is complete
-        
-        {
-            var point1, point2 ExtendedGroupElement
-	var point3 CachedGroupElement
-	var point4 CompletedGroupElement
-	var point5 ProjectiveGroupElement
 
-	if public_spend_cache_key !=basekey {
-	if !point1.FromBytes(&basekey) { // this can be cached
-		panic("Invalid public key.")
+	// key derivation derivation = kd is complete
+
+	{
+		var point1, point2 ExtendedGroupElement
+		var point3 CachedGroupElement
+		var point4 CompletedGroupElement
+		var point5 ProjectiveGroupElement
+
+		if public_spend_cache_key != basekey {
+			if !point1.FromBytes(&basekey) { // this can be cached
+				panic("Invalid public key.")
+			}
+
+			public_spend_cache_key = basekey
+			public_spend_cache = point1
+		} else {
+			point1 = public_spend_cache
+		}
+
+		scalar := tmp.KeyDerivationToScalar(outputIndex)
+		GeScalarMultBase(&point2, scalar)
+		point2.ToCached(&point3)
+		geAdd(&point4, &point1, &point3)
+		point4.ToProjective(&point5)
+		point5.ToBytes(&tmp)
+		return tmp
 	}
-	
-	public_spend_cache_key = basekey
-	public_spend_cache = point1
-        }else{
-         point1 =    public_spend_cache
-        }
-
-	scalar := tmp.KeyDerivationToScalar(outputIndex)
-	GeScalarMultBase(&point2, scalar)
-	point2.ToCached(&point3)
-	geAdd(&point4, &point1, &point3)
-	point4.ToProjective(&point5)
-	point5.ToBytes(&tmp)
-	return tmp
-        }
 
 }
 

@@ -104,41 +104,38 @@ func gettransactions_fill(p structures.GetTransaction_Params) (result structures
 								related.Ring[i][j] = ring_data
 							}
 						}
-						
-						related.SCBalance, _ = chain.ReadSCValue(nil,crypto.Key(hash),nil)
-                                                for _,v := range p.SC_Keys {
-                                                    var key interface{}
-                                
-                                                    if s, err := strconv.ParseUint(v, 10, 64); err == nil {
-                                                        key = s
-                                                    }else{
-                                                        key = v
-                                                    }
-                                                    _, value := chain.ReadSCValue(nil,crypto.Key(hash),key)
-                                                    
-                                                    if value == nil {
-                                                        related.SC_Keys[v]=""
-                                                    }else if _,ok := value.(uint64);ok {
-                                                        related.SC_Keys[v]= fmt.Sprintf("%d",value.(uint64))
-                                                    }else if _,ok := value.(string);ok {
-                                                        related.SC_Keys[v]= value.(string)
-                                                    }else{
-                                                        related.SC_Keys[v]=""
-                                                    }
-                                    
-                                                }
-                                                tx.Parse_Extra()
-                                                if _,ok := tx.Extra_map[transaction.TX_EXTRA_SCDATA];ok {
-                                                 related.SCRAW = string( tx.Extra_map[transaction.TX_EXTRA_SCDATA].([]byte))  
-                                                }
-                                                
-                                                // parsed SC
-                                                
-                                                related.SC,_ = chain.ReadSC(nil,crypto.Key(hash))
-                                                    
-                                                    
-                                                
-                        
+
+						related.SCBalance, _ = chain.ReadSCValue(nil, crypto.Key(hash), nil)
+						for _, v := range p.SC_Keys {
+							var key interface{}
+
+							if s, err := strconv.ParseUint(v, 10, 64); err == nil {
+								key = s
+							} else {
+								key = v
+							}
+							_, value := chain.ReadSCValue(nil, crypto.Key(hash), key)
+
+							if value == nil {
+								related.SC_Keys[v] = ""
+							} else if _, ok := value.(uint64); ok {
+								related.SC_Keys[v] = fmt.Sprintf("%d", value.(uint64))
+							} else if _, ok := value.(string); ok {
+								related.SC_Keys[v] = value.(string)
+							} else {
+								related.SC_Keys[v] = ""
+							}
+
+						}
+						tx.Parse_Extra()
+						if _, ok := tx.Extra_map[transaction.TX_EXTRA_SCDATA]; ok {
+							related.SCRAW = string(tx.Extra_map[transaction.TX_EXTRA_SCDATA].([]byte))
+						}
+
+						// parsed SC
+
+						related.SC, _ = chain.ReadSC(nil, crypto.Key(hash))
+
 						err = nil
 					}
 
@@ -165,20 +162,19 @@ func gettransactions_fill(p structures.GetTransaction_Params) (result structures
 					//   logger.Infof("TX hash %s height %d",hash, related.Block_Height)
 					for i := 0; i < len(tx.Vout); i++ {
 						if index >= 0 {
-                                                    var zero crypto.Key
-                                                    if  crypto.Key(tx.Vout[i].Target.(transaction.Txout_to_key).Key) != zero { 
-                                                        related.Output_Indices = append(related.Output_Indices, uint64(index))
-                                                    }else{
-                                                        related.Output_Indices = append(related.Output_Indices, 0)
-                                                    }
-                                                    
-							
+							var zero crypto.Key
+							if crypto.Key(tx.Vout[i].Target.(transaction.Txout_to_key).Key) != zero {
+								related.Output_Indices = append(related.Output_Indices, uint64(index))
+							} else {
+								related.Output_Indices = append(related.Output_Indices, 0)
+							}
+
 						} else {
 							related.Output_Indices = append(related.Output_Indices, 0)
 						}
 						index++
 					}
-					
+
 					// todo we should add  SC outputs also
 					result.Txs_as_hex = append(result.Txs_as_hex, hex.EncodeToString(tx.Serialize()))
 					result.Txs = append(result.Txs, related)

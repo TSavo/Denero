@@ -36,7 +36,7 @@ type BoltStore struct {
 	DB         *bolt.DB
 	tx         *bolt.Tx
 	sync.Mutex // lock this struct
-	rw sync.RWMutex
+	rw         sync.RWMutex
 }
 
 // this object is returned
@@ -60,11 +60,11 @@ func (b *BoltStore) Init(params map[string]interface{}) (err error) {
 	// Open the my.db data file in your current directory.
 	// It will be created if it doesn't exist.
 
-	options := &bolt.Options{InitialMmapSize :1 * 1024 * 1024 * 1024}
+	options := &bolt.Options{InitialMmapSize: 1 * 1024 * 1024 * 1024}
 	if runtime.GOOS != "windows" && strconv.IntSize == 64 {
 		options.InitialMmapSize *= 40 // default allocation 40 GB
-	}else{
-		options.InitialMmapSize = 0 // on windows, make it 0	
+	} else {
+		options.InitialMmapSize = 0 // on windows, make it 0
 	}
 
 	b.DB, err = bolt.Open(current_path, 0600, options)
@@ -263,8 +263,8 @@ func (b *BoltStore) LoadObject(tx *bolt.Tx, universe_name []byte, bucket_name []
 
 	b.Lock()
 	defer b.Unlock()
-        //b.rw.RLock()
-        //defer b.rw.RUnlock()
+	//b.rw.RLock()
+	//defer b.rw.RUnlock()
 
 	// open universe bucket
 	{

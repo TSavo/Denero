@@ -61,9 +61,9 @@ func (h TransferSplit_Handler) ServeJSONRPC(c context.Context, params *fastjson.
 
 	rlog.Debugf("Len destinations %d %+v", len(p.Destinations), p)
 
-        unlock_time := p.Unlock_time
+	unlock_time := p.Unlock_time
 	payment_id := p.Payment_ID
-	if len(payment_id) > 0 && (len(payment_id) == 64 || len(payment_id) == 16) != true  {
+	if len(payment_id) > 0 && (len(payment_id) == 64 || len(payment_id) == 16) != true {
 		return nil, jsonrpc.ErrInvalidParams() // we should give invalid payment ID
 	}
 	if _, err := hex.DecodeString(p.Payment_ID); err != nil {
@@ -96,37 +96,37 @@ func (h TransferSplit_Handler) ServeJSONRPC(c context.Context, params *fastjson.
 
 		// TODO
 	}
-	
+
 	tx_sc := &transaction.SC_Transaction{}
-	
+
 	fmt.Printf("tx_sc %+v\n", p.SCTX)
-	
-        if len(p.SCTX.SC) > 0 { // ddecode base64 layer
-             t, _ := base64.StdEncoding.DecodeString(p.SCTX.SC)
-             p.SCTX.SC = string(t)
-            
-        }
+
+	if len(p.SCTX.SC) > 0 { // ddecode base64 layer
+		t, _ := base64.StdEncoding.DecodeString(p.SCTX.SC)
+		p.SCTX.SC = string(t)
+
+	}
 	if len(p.SCTX.SC) > 0 || len(p.SCTX.EntryPoint) > 0 {
-            tx_sc = &p.SCTX
-        }else{
-            tx_sc = nil
-        }
-        
-        // user wants to deliver some DEROs to SC
-	if tx_sc !=  nil && tx_sc.Value != 0  {
-            var a address.Address   // a blank address to 0
-            if globals.IsMainnet() {
-                a.Network = config.Mainnet.Public_Address_Prefix
-            }else{
-                a.Network=  config.Testnet.Public_Address_Prefix
-            }
-            
-            address_list = append(address_list,a)
-            amount_list = append(amount_list,tx_sc.Value)
-            
-        }
-	
-	tx, inputs, input_sum, change, err := h.r.w.Transfer(address_list, amount_list, unlock_time, payment_id, fees_per_kb, p.Mixin,tx_sc)
+		tx_sc = &p.SCTX
+	} else {
+		tx_sc = nil
+	}
+
+	// user wants to deliver some DEROs to SC
+	if tx_sc != nil && tx_sc.Value != 0 {
+		var a address.Address // a blank address to 0
+		if globals.IsMainnet() {
+			a.Network = config.Mainnet.Public_Address_Prefix
+		} else {
+			a.Network = config.Testnet.Public_Address_Prefix
+		}
+
+		address_list = append(address_list, a)
+		amount_list = append(amount_list, tx_sc.Value)
+
+	}
+
+	tx, inputs, input_sum, change, err := h.r.w.Transfer(address_list, amount_list, unlock_time, payment_id, fees_per_kb, p.Mixin, tx_sc)
 	_ = inputs
 	if err != nil {
 		rlog.Warnf("Error while building Transaction err %s\n", err)

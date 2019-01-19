@@ -67,19 +67,18 @@ func (chain *Blockchain) Create_new_miner_block(miner_address address.Address) (
 
 	// let give is a chance to mempool to do house keeping
 	// we can skip house-keeping
-        /*
-	func() {
-		if r := recover(); r != nil {
-			logger.Warnf("Mempool House Keeping triggered panic height = %d", chain.Get_Height())
-		}
+	/*
+		func() {
+			if r := recover(); r != nil {
+				logger.Warnf("Mempool House Keeping triggered panic height = %d", chain.Get_Height())
+			}
 
-		// give mempool an oppurtunity to verify alt-chain tx, but only if they are not mined
-		// but only check for double spending
-		chain.Mempool.HouseKeeping(uint64(chain.Get_Height()), func(tx *transaction.Transaction) bool {
-			return chain.Verify_Transaction_NonCoinbase_DoubleSpend_Check(dbtx, tx)
-		})
-	}() */
-	
+			// give mempool an oppurtunity to verify alt-chain tx, but only if they are not mined
+			// but only check for double spending
+			chain.Mempool.HouseKeeping(uint64(chain.Get_Height()), func(tx *transaction.Transaction) bool {
+				return chain.Verify_Transaction_NonCoinbase_DoubleSpend_Check(dbtx, tx)
+			})
+		}() */
 
 	// first of lets find the tx fees collected by consuming txs from mempool
 	tx_hash_list_sorted := chain.Mempool.Mempool_List_TX_SortedInfo() // hash of all tx expected to be included within this block , sorted by fees
@@ -132,7 +131,7 @@ func (chain *Blockchain) Create_new_miner_block(miner_address address.Address) (
 				continue
 			}
 
-			rlog.Tracef(1,"Adding Top  Sorted tx %s to Complete_Block current size %.2f KB max possible %.2f KB\n", tx_hash_list_sorted[i].Hash, float32(sizeoftxs+tx_hash_list_sorted[i].Size)/1024.0, float32(config.CRYPTONOTE_MAX_BLOCK_SIZE)/1024.0)
+			rlog.Tracef(1, "Adding Top  Sorted tx %s to Complete_Block current size %.2f KB max possible %.2f KB\n", tx_hash_list_sorted[i].Hash, float32(sizeoftxs+tx_hash_list_sorted[i].Size)/1024.0, float32(config.CRYPTONOTE_MAX_BLOCK_SIZE)/1024.0)
 			sizeoftxs += tx_hash_list_sorted[i].Size
 			cbl.Txs = append(cbl.Txs, tx)
 			tx_hash_list_included = append(tx_hash_list_included, tx_hash_list_sorted[i].Hash)
@@ -175,7 +174,7 @@ func (chain *Blockchain) Create_new_miner_block(miner_address address.Address) (
 				continue
 			}
 
-			rlog.Tracef(1,"Adding Random tx %s to Complete_Block current size %.2f KB max possible %.2f KB\n", tx_hash_list_sorted[i].Hash, float32(sizeoftxs+tx_hash_list_sorted[i].Size)/1024.0, float32(config.CRYPTONOTE_MAX_BLOCK_SIZE)/1024.0)
+			rlog.Tracef(1, "Adding Random tx %s to Complete_Block current size %.2f KB max possible %.2f KB\n", tx_hash_list_sorted[i].Hash, float32(sizeoftxs+tx_hash_list_sorted[i].Size)/1024.0, float32(config.CRYPTONOTE_MAX_BLOCK_SIZE)/1024.0)
 			sizeoftxs += tx_hash_list_sorted[i].Size
 			cbl.Txs = append(cbl.Txs, tx)
 			tx_hash_list_included = append(tx_hash_list_included, tx_hash_list_sorted[i].Hash)
@@ -246,16 +245,16 @@ var duplicate_height_check = map[uint64]bool{}
 // accept work given by us
 // we should verify that the transaction list supplied back by the miner exists in the mempool
 // otherwise the miner is trying to attack the network
-func (chain *Blockchain) Accept_new_block(block_template []byte, blockhashing_blob []byte) (blid crypto.Hash,result bool, err error) {
+func (chain *Blockchain) Accept_new_block(block_template []byte, blockhashing_blob []byte) (blid crypto.Hash, result bool, err error) {
 
 	// check whether  we are in lowcpu mode, if yes reject the block
 	if globals.Arguments["--lowcpuram"].(bool) {
 		globals.Logger.Warnf("Mining is deactivated since daemon is running in low cpu mode, please check program options.")
-		return blid,false, fmt.Errorf("Please decativate lowcpuram mode")
+		return blid, false, fmt.Errorf("Please decativate lowcpuram mode")
 	}
 	if globals.Arguments["--sync-node"].(bool) {
 		globals.Logger.Warnf("Mining is deactivated since daemon is running with --sync-mode, please check program options.")
-		return blid,false, fmt.Errorf("Please deactivate --sync-node option before mining")
+		return blid, false, fmt.Errorf("Please deactivate --sync-node option before mining")
 	}
 
 	accept_lock.Lock()
@@ -277,19 +276,19 @@ func (chain *Blockchain) Accept_new_block(block_template []byte, blockhashing_bl
 	err = bl.Deserialize(block_template)
 	if err != nil {
 		logger.Warnf("Error parsing submitted work block template err %s", err)
-		return 
+		return
 	}
 
 	length_of_block_header := len(bl.Serialize())
 	template_data := block_template[length_of_block_header:]
 
-	if len(blockhashing_blob) >= 2{
-	err = bl.CopyNonceFromBlockWork(blockhashing_blob)
-	if err != nil {
-		logger.Warnf("Submitted block has been rejected, since blockhashing_blob is invalid")
-		return
+	if len(blockhashing_blob) >= 2 {
+		err = bl.CopyNonceFromBlockWork(blockhashing_blob)
+		if err != nil {
+			logger.Warnf("Submitted block has been rejected, since blockhashing_blob is invalid")
+			return
+		}
 	}
-        }
 
 	if len(template_data) != 0 {
 		logger.Warnf("Extra bytes (%d) left over while accepting block from mining pool %x", len(template_data), template_data)
@@ -298,19 +297,19 @@ func (chain *Blockchain) Accept_new_block(block_template []byte, blockhashing_bl
 	// if we reach here, everything looks ok
 	// try to craft a complete block by grabbing entire tx from the mempool
 	//logger.Debugf("Block parsed successfully")
-	
+
 	blid = bl.GetHash()
-	
-        // if a duplicate block is being sent, reject the block
+
+	// if a duplicate block is being sent, reject the block
 	if _, ok := duplicate_check[bl.Miner_TX.GetHash()]; ok {
 		logger.Warnf("Block %s rejected by chain due to duplicate work.", bl.GetHash())
-                err = fmt.Errorf("Error duplicate work")
+		err = fmt.Errorf("Error duplicate work")
 		return
 	}
 
-	if _,ok := duplicate_height_check[bl.Miner_TX.Vin[0].(transaction.Txin_gen).Height];ok{
+	if _, ok := duplicate_height_check[bl.Miner_TX.Vin[0].(transaction.Txin_gen).Height]; ok {
 		logger.Warnf("Block %s rejected by chain due to duplicate hwork.", bl.GetHash())
-                err = fmt.Errorf("Error duplicate work")
+		err = fmt.Errorf("Error duplicate work")
 		return
 	}
 
@@ -332,8 +331,6 @@ func (chain *Blockchain) Accept_new_block(block_template []byte, blockhashing_bl
 		}
 	}
 	cbl.Bl = &bl // the block is now complete, lets try to add it to chain
-
-
 
 	if !accept_limiter.Allow() { // if rate limiter allows, then add block to chain
 		logger.Warnf("Block %s rejected by chain.", bl.GetHash())

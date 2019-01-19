@@ -85,7 +85,7 @@ func handle_prompt_command(l *readline.Instance, line string) {
 		fmt.Fprintf(l.Stderr(), "Total balance    : "+color_green+"%s"+color_white+"\n\n", globals.FormatMoney12(locked_balance+balance_unlocked))
 
 	case "rescan_bc", "rescan_spent": // rescan from 0
-			rescan_bc(wallet)
+		rescan_bc(wallet)
 
 	case "seed": // give user his seed, if password is valid
 		if !wallet.Is_View_Only() {
@@ -257,7 +257,7 @@ func handle_prompt_command(l *readline.Instance, line string) {
 		}
 
 		offline := offline_mode
-		tx, inputs, input_sum, change, err := wallet.Transfer(addr_list, amount_list, 0, payment_id, 0, 0,nil)
+		tx, inputs, input_sum, change, err := wallet.Transfer(addr_list, amount_list, 0, payment_id, 0, 0, nil)
 		build_relay_transaction(l, tx, inputs, input_sum, change, err, offline, amount_list)
 
 	case "q", "bye", "exit", "quit":
@@ -675,7 +675,6 @@ func PressAnyKey(l *readline.Instance, wallet *walletapi.Wallet) {
 	return
 }
 
-
 // if we are in offline, scan default or user provided file
 // this function will replay the blockchain data in offline mode
 func trigger_offline_data_scan(wallet *walletapi.Wallet) {
@@ -685,11 +684,10 @@ func trigger_offline_data_scan(wallet *walletapi.Wallet) {
 		filename = globals.Arguments["--offline_datafile"].(string)
 	}
 
-        globals.Logger.Infof("using offline data file=\"%s\"  ", filename)
-	
-        wallet.Scan_Offline_File(filename)
-}
+	globals.Logger.Infof("using offline data file=\"%s\"  ", filename)
 
+	wallet.Scan_Offline_File(filename)
+}
 
 // this completer is used to complete the commands at the prompt
 // BUG, this needs to be disabled in menu mode
@@ -793,11 +791,11 @@ func display_viewwallet_key(l *readline.Instance, wallet *walletapi.Wallet) {
 // start a rescan from block 0
 func rescan_bc(wallet *walletapi.Wallet) {
 	if offline_mode {
-                        globals.Logger.Infof("Offline wallet rescanning")
-                        wallet.Clean() // clean existing data from wallet
-                        wallet.Rescan_From_Height(0)
-                   go    trigger_offline_data_scan(wallet)
-                }  
+		globals.Logger.Infof("Offline wallet rescanning")
+		wallet.Clean() // clean existing data from wallet
+		wallet.Rescan_From_Height(0)
+		go trigger_offline_data_scan(wallet)
+	}
 	if wallet.GetMode() { // trigger rescan we the wallet is online
 		wallet.Clean() // clean existing data from wallet
 		wallet.Rescan_From_Height(0)
@@ -891,14 +889,14 @@ func show_transfers(l *readline.Instance, wallet *walletapi.Wallet, limit uint64
 		case 0:
 
 			if len(transfers[i].PaymentID) == 0 {
-				io.WriteString(l.Stderr(), fmt.Sprintf(color_green+"%s Height %d TopoHeight %d transaction %s received %s DERO"+color_white+"\n",transfers[i].Time.Format(time.RFC822), transfers[i].Height, transfers[i].TopoHeight, transfers[i].TXID, globals.FormatMoney12(transfers[i].Amount)))
+				io.WriteString(l.Stderr(), fmt.Sprintf(color_green+"%s Height %d TopoHeight %d transaction %s received %s DERO"+color_white+"\n", transfers[i].Time.Format(time.RFC822), transfers[i].Height, transfers[i].TopoHeight, transfers[i].TXID, globals.FormatMoney12(transfers[i].Amount)))
 			} else {
 				payment_id := fmt.Sprintf("%x", transfers[i].PaymentID)
-				io.WriteString(l.Stderr(), fmt.Sprintf(color_green+"%s Height %d TopoHeight %d transaction %s received %s DERO"+color_white+" PAYMENT ID:%s\n",transfers[i].Time.Format(time.RFC822), transfers[i].Height, transfers[i].TopoHeight, transfers[i].TXID, globals.FormatMoney12(transfers[i].Amount), payment_id))
+				io.WriteString(l.Stderr(), fmt.Sprintf(color_green+"%s Height %d TopoHeight %d transaction %s received %s DERO"+color_white+" PAYMENT ID:%s\n", transfers[i].Time.Format(time.RFC822), transfers[i].Height, transfers[i].TopoHeight, transfers[i].TXID, globals.FormatMoney12(transfers[i].Amount), payment_id))
 			}
 
 		case 1:
-			io.WriteString(l.Stderr(), fmt.Sprintf(color_magenta+"%s Height %d TopoHeight %d transaction %s spent %s DERO"+color_white+"\n",transfers[i].Time.Format(time.RFC822), transfers[i].Height, transfers[i].TopoHeight, transfers[i].TXID, globals.FormatMoney12(transfers[i].Amount)))
+			io.WriteString(l.Stderr(), fmt.Sprintf(color_magenta+"%s Height %d TopoHeight %d transaction %s spent %s DERO"+color_white+"\n", transfers[i].Time.Format(time.RFC822), transfers[i].Height, transfers[i].TopoHeight, transfers[i].TXID, globals.FormatMoney12(transfers[i].Amount)))
 		case 2:
 			fallthrough
 		default:

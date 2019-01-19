@@ -18,7 +18,6 @@ package proof
 
 import "testing"
 
-
 // this function will prove detect and decode output amount for the tx
 func Test_Prove(t *testing.T) {
 

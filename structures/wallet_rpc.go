@@ -62,8 +62,8 @@ type (
 		Priority     uint64        `json:"priority"`
 		Do_not_relay bool          `json:"do_not_relay"`
 		Get_tx_hex   bool          `json:"get_tx_hex"`
-		
-		SCTX         transaction.SC_Transaction   `json:"sc_tx"`
+
+		SCTX transaction.SC_Transaction `json:"sc_tx"`
 	} // no params
 	Transfer_Result struct {
 		Fee     uint64 `json:"fee"`
@@ -88,27 +88,26 @@ type (
 // each outgoing transaction will have this detail,
 // if the wallet is recreated from scratch this information will be lost
 type Outgoing_Transfer_Details struct {
-	TXID string `json:"txid,omitempty"`
-	PaymentID  string  `json:"paymentid,omitempty"` // actual payment id
-	Fees  uint64      `json:"fees,omitempty"` // fees
-	Amount           []uint64 `json:"amount,omitempty"`    // amount sent
-	Daddress   []string `json:"to,omitempty"`// taken from address
-	TXsecretkey string `json:"tx_secret_key,omitempty"` //secret key for transaction
+	TXID        string   `json:"txid,omitempty"`
+	PaymentID   string   `json:"paymentid,omitempty"`     // actual payment id
+	Fees        uint64   `json:"fees,omitempty"`          // fees
+	Amount      []uint64 `json:"amount,omitempty"`        // amount sent
+	Daddress    []string `json:"to,omitempty"`            // taken from address
+	TXsecretkey string   `json:"tx_secret_key,omitempty"` //secret key for transaction
 }
-
 
 type (
 	Transfer_Details struct {
-		TXID        string `json:"tx_hash"`
-		Payment_ID  string `json:"payment_id,omitempty"`
-		Height      uint64 `json:"block_height"`
-		Timestamp   uint64 `json:"timestamp,omitempty"`
-		Amount      uint64 `json:"amount"`
-		Fees        uint64 `json:"fee,omitempty"`
-		Unlock_time uint64 `json:"unlock_time"`
+		TXID         string        `json:"tx_hash"`
+		Payment_ID   string        `json:"payment_id,omitempty"`
+		Height       uint64        `json:"block_height"`
+		Timestamp    uint64        `json:"timestamp,omitempty"`
+		Amount       uint64        `json:"amount"`
+		Fees         uint64        `json:"fee,omitempty"`
+		Unlock_time  uint64        `json:"unlock_time"`
 		Destinations []Destination `json:"destinations"`
-		Note string `json:"note,omitempty"`
-		Type string `json:"type,omitempty"`
+		Note         string        `json:"note,omitempty"`
+		Type         string        `json:"type,omitempty"`
 	}
 
 	Get_Transfers_Params struct {

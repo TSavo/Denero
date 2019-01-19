@@ -120,7 +120,7 @@ func (connection *Connection) Handle_Notification_Block(buf []byte) {
 
 	// the block is not in our db,  parse entire block, complete the txs and try to add it
 	if len(bl.Tx_hashes) == len(request.CBlock.Txs) {
-		connection.logger.Debugf("Received a complete block %s with %d transactions",blid, len(bl.Tx_hashes))
+		connection.logger.Debugf("Received a complete block %s with %d transactions", blid, len(bl.Tx_hashes))
 		for j := range request.CBlock.Txs {
 			var tx transaction.Transaction
 			err = tx.DeserializeHeader(request.CBlock.Txs[j])
@@ -133,7 +133,7 @@ func (connection *Connection) Handle_Notification_Block(buf []byte) {
 		}
 	} else { // the block is NOT complete, we consider it as an ultra compact block
 
-		connection.logger.Debugf("Received an ultra compact block %s, total %d contains %d skipped %d transactions", blid,len(bl.Tx_hashes), len(request.CBlock.Txs), len(bl.Tx_hashes)-len(request.CBlock.Txs))
+		connection.logger.Debugf("Received an ultra compact block %s, total %d contains %d skipped %d transactions", blid, len(bl.Tx_hashes), len(request.CBlock.Txs), len(bl.Tx_hashes)-len(request.CBlock.Txs))
 		for j := range request.CBlock.Txs {
 			var tx transaction.Transaction
 			err = tx.DeserializeHeader(request.CBlock.Txs[j])

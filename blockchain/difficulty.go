@@ -154,14 +154,14 @@ func (chain *Blockchain) validate_tips(dbtx storage.DBTX, reference, actual cryp
 // we need to do more simulations and evaluations
 func (chain *Blockchain) Get_Difficulty_At_Tips(dbtx storage.DBTX, tips []crypto.Hash) *big.Int {
 
- 	var MinimumDifficulty *big.Int
+	var MinimumDifficulty *big.Int
 
- 	if globals.IsMainnet() {
- 		MinimumDifficulty = new(big.Int).SetUint64(config.MAINNET_MINIMUM_DIFFICULTY) // this must be controllable parameter
+	if globals.IsMainnet() {
+		MinimumDifficulty = new(big.Int).SetUint64(config.MAINNET_MINIMUM_DIFFICULTY) // this must be controllable parameter
 
- 		}else{
- 			MinimumDifficulty = new(big.Int).SetUint64(config.TESTNET_MINIMUM_DIFFICULTY) // this must be controllable parameter
- 		}
+	} else {
+		MinimumDifficulty = new(big.Int).SetUint64(config.TESTNET_MINIMUM_DIFFICULTY) // this must be controllable parameter
+	}
 	//MinimumDifficulty := new(big.Int).SetUint64(131072) // TODO  tthis must be controllable parameter
 	GenesisDifficulty := new(big.Int).SetUint64(1)
 
